@@ -65,6 +65,7 @@
   .barra .tot{flex:1}
   .barra small{color:var(--gris);display:block}
   .barra b{font-size:20px}
+  .cintilla{background:#C62828;color:#fff;font-weight:800;font-size:15px;line-height:1.35;text-align:center;padding:10px 14px;border-radius:12px;margin:12px 0}
   .btn{background:var(--acento);color:#fff;border:0;border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer}
   .btn.sec{background:#fff;color:var(--azul);border:1.5px solid var(--azul)}
   .btn:disabled{opacity:.6;cursor:wait}
@@ -107,6 +108,19 @@
     .barra .btn{padding:12px 16px}
   }
   .cerrado{text-align:center;padding:40px 10px;color:var(--gris)}
+  .buscador{position:relative;margin-bottom:14px}
+  .buscador input{width:100%;box-sizing:border-box;padding:13px 44px 13px 44px;font-size:16px;border:1.5px solid var(--linea);border-radius:14px;background:#fff}
+  .buscador input:focus{outline:none;border-color:var(--azul)}
+  .buscador .lupa{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none}
+  .buscador .x{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;font-size:22px;color:var(--gris);cursor:pointer;display:none}
+  .consulta-link{display:block;width:100%;margin:0 0 14px;padding:12px;border:1.5px dashed var(--azul);border-radius:14px;background:#fff;color:var(--azul);font-weight:700;font-size:15px;cursor:pointer}
+  .estado{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:800;font-size:14px}
+  .estado.p{background:#C62828;color:#fff}
+  .estado.g{background:#1f8a5b;color:#fff}
+  .estado.c{background:#2d5486;color:#fff}
+  .estado.x{background:#e5e7eb;color:#374151}
+  .form-consulta label{display:block;margin:12px 0 6px;font-weight:600}
+  .form-consulta input{width:100%;box-sizing:border-box;padding:12px 14px;font-size:16px;border:1.5px solid var(--linea);border-radius:12px}
 </style>
 </head>
 <body>
@@ -127,9 +141,31 @@
 <main id="main">
   <div id="vistaCatalogo">
     <div class="aviso"><b>¿Cómo funciona?</b> Elige tus productos y la cantidad, envía tu pedido y guarda tu <b>folio</b>. <span id="avisoTicket"></span></div>
+    <button type="button" class="consulta-link" onclick="abrirConsulta()">¿Ya hiciste tu pedido? Consúltalo aquí</button>
+    <div class="buscador" id="buscador" style="display:none">
+      <svg class="lupa" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="buscar" type="text" enterkeyhint="search" placeholder="Buscar producto (ej. empanadas)" aria-label="Buscar producto" autocomplete="off" oninput="filtrar()">
+      <button type="button" class="x" id="limpiarBusqueda" aria-label="Borrar búsqueda" onclick="limpiarBusqueda()">×</button>
+    </div>
     <div class="grid" id="grid"></div>
   </div>
   <div id="vistaConf" style="display:none"></div>
+  <div id="vistaConsulta" style="display:none">
+    <div class="form-consulta">
+      <h2 style="margin:0 0 4px">Consultar mi pedido</h2>
+      <p style="margin:0 0 6px;color:var(--gris)">Escribe tu folio y el teléfono que pusiste al hacer el pedido.</p>
+      <label for="cFolio">Folio</label>
+      <input id="cFolio" placeholder="Ej. K-0012" autocapitalize="characters" autocomplete="off" maxlength="10">
+      <label for="cTel">Teléfono (WhatsApp)</label>
+      <input id="cTel" type="tel" inputmode="tel" maxlength="20">
+      <div class="err" id="cErr"></div>
+      <div class="acciones">
+        <button class="btn sec" onclick="cerrarConsulta()">Regresar</button>
+        <button class="btn" id="btnConsultar" onclick="consultar()">Consultar</button>
+      </div>
+    </div>
+    <div id="cResultado"></div>
+  </div>
 </main>
 
 <div class="barra" id="barra">
@@ -144,6 +180,7 @@
   <h2>Tu pedido</h2>
   <div id="lineas"></div>
   <div class="total"><span>Total a pagar en Caja</span><span id="totalPanel"></span></div>
+  <div class="cintilla" role="note">Para que tu pedido sea válido, debes realizar tu pago en Caja.</div>
 
   <label for="tutor">Nombre del padre, madre o tutor *</label>
   <input id="tutor" autocomplete="name" maxlength="80">
@@ -202,7 +239,16 @@
       barra();
       return;
     }
-    $('grid').innerHTML = DATA.productos.map(p => {
+    $('buscador').style.display = DATA.productos.length > 4 ? 'block' : 'none';
+    const q = normal($('buscar').value);
+    const lista = q ? DATA.productos.filter(p => normal(p.nombre).includes(q)) : DATA.productos;
+    $('limpiarBusqueda').style.display = q ? 'block' : 'none';
+    if (!lista.length){
+      $('grid').innerHTML = '<div class="cerrado" style="grid-column:1/-1"><h2>No encontramos “' + esc($('buscar').value.trim()) + '”</h2><p>Prueba con otra palabra o borra la búsqueda.</p></div>';
+      barra();
+      return;
+    }
+    $('grid').innerHTML = lista.map(p => {
       const n = carrito[p.id] || 0;
       const det = p.unidades > 1 ? 'Orden de ' + p.unidades + ' piezas' : '&nbsp;';
       const foto = p.foto
@@ -283,6 +329,7 @@
     v.style.display = 'block';
     v.innerHTML =
       '<div class="conf"><div class="ok">✓</div><div>¡Gracias, ' + esc(r.tutor.split(' ')[0]) + '! Tu pedido quedó registrado.</div>' +
+      '<div class="cintilla" role="note">Tu pedido será válido hasta que realices tu pago en Caja.</div>' +
       '<div style="margin-top:14px;color:var(--gris);font-size:14px">Tu folio es</div><div class="folio">' + esc(r.folio) + '</div>' +
       '<div style="font-size:14px;color:var(--gris)">Alumno: ' + esc(r.alumno) + '</div>' +
       '<div style="margin-top:14px;text-align:left">' + r.lineas.map(l =>
@@ -291,6 +338,60 @@
       '<div class="pasos"><b>¿Qué sigue?</b><br>1. Toma captura de esta pantalla.<br>2. Pasa a <b>Caja</b> con tu folio y paga ' + dinero(r.total) + '.<br>3. Te entregan tu ticket; preséntalo en la kermés para recoger tus productos.</div>' +
       '<button class="btn sec" onclick="nuevoPedido()">Hacer otro pedido</button></div>';
     window.scrollTo(0, 0);
+  }
+
+  // Sin acentos ni mayúsculas, para que "empanada" encuentre "Empanadas" y "pina" encuentre "Piña"
+  function normal(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
+  let tFiltro = null;
+  function filtrar(){ clearTimeout(tFiltro); tFiltro = setTimeout(render, 120); }
+  function limpiarBusqueda(){ $('buscar').value = ''; render(); $('buscar').focus(); }
+
+  /* ---------- Consultar mi pedido (folio + teléfono) ---------- */
+  function abrirConsulta(){
+    $('vistaCatalogo').style.display = 'none';
+    $('vistaConf').style.display = 'none';
+    $('barra').style.display = 'none';
+    $('vistaConsulta').style.display = 'block';
+    $('cErr').textContent = '';
+    window.scrollTo(0, 0);
+  }
+  function cerrarConsulta(){
+    $('vistaConsulta').style.display = 'none';
+    $('vistaCatalogo').style.display = 'block';
+    $('cResultado').innerHTML = '';
+    barra();
+    window.scrollTo(0, 0);
+  }
+  function consultar(){
+    const folio = $('cFolio').value.trim().toUpperCase();
+    const telefono = $('cTel').value;
+    if (!/^[KV]-?\d{1,6}$/.test(folio)) { $('cErr').textContent = 'Escribe tu folio como aparece en tu captura, por ejemplo K-0012.'; return; }
+    if (telefono.replace(/\D/g, '').length < 10) { $('cErr').textContent = 'Escribe el teléfono de 10 dígitos que pusiste en tu pedido.'; return; }
+    const b = $('btnConsultar'); b.disabled = true; b.textContent = 'Buscando…'; $('cErr').textContent = ''; $('cResultado').innerHTML = '';
+    fetch(API, {
+      method: 'POST', credentials: 'omit', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ accion: 'consulta', folio, telefono }),
+    })
+      .then(r => r.json())
+      .then(res => { if (!res.ok) throw new Error(res.error); mostrarConsulta(res.data); })
+      .catch(e => { $('cErr').textContent = (e && e.message) || 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.'; })
+      .finally(() => { b.disabled = false; b.textContent = 'Consultar'; });
+  }
+  function mostrarConsulta(p){
+    const clase = { 'Pendiente de pago': 'p', 'Pagado': 'g', 'Canjeado': 'c', 'Cancelado': 'x' }[p.estado] || 'x';
+    const texto = { 'Pendiente de pago': 'Pendiente de pago', 'Pagado': 'Pagado · recoge tus productos en la kermés', 'Canjeado': 'Entregado', 'Cancelado': 'Cancelado' }[p.estado] || p.estado;
+    $('cResultado').innerHTML =
+      '<div class="conf" style="margin-top:18px;text-align:left">' +
+      '<div style="text-align:center"><div style="color:var(--gris);font-size:14px">Folio</div><div class="folio">' + esc(p.folio) + '</div>' +
+      '<span class="estado ' + clase + '">' + esc(texto) + '</span></div>' +
+      (p.estado === 'Pendiente de pago' ? '<div class="cintilla" role="note">Tu pedido será válido hasta que realices tu pago en Caja.</div>' : '') +
+      '<div style="margin-top:12px;font-size:14px;color:var(--gris)">' + esc(p.tutor) + (p.alumno ? ' · Alumno: ' + esc(p.alumno) : '') + '</div>' +
+      '<div style="margin-top:10px">' + p.lineas.map(l =>
+        '<div class="lin"><span>' + l.cantidad + ' × ' + esc(l.nombre) + '</span><b>' + dinero(l.subtotal) + '</b></div>').join('') +
+      '<div class="total"><span>Total</span><span>' + dinero(p.total) + '</span></div></div>' +
+      (p.fechaPago ? '<div style="font-size:14px;color:var(--gris)">Pagado el ' + esc(p.fechaPago) + '</div>' : '') +
+      '</div>';
   }
 
   function nuevoPedido(){
