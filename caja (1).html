@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caja · Kermés</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--azul:#1f3a5f;--azul2:#2d5486;--fondo:#f4f6f9;--tinta:#1d2430;--gris:#6b7280;--linea:#e3e7ee;
+    --acento:#e0672b;--ok:#1f8a5b;--warn:#b7791f;--mal:#b42318}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--tinta)}
+  header{background:var(--azul);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;flex:1}
+  .tabs{display:flex;gap:6px}
+  .tab{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;padding:8px 14px;border-radius:999px;cursor:pointer;font-size:14px}
+  .tab.act{background:#fff;color:var(--azul);font-weight:700}
+  main{max-width:1100px;margin:0 auto;padding:18px}
+  .login{max-width:340px;margin:80px auto;background:#fff;border-radius:16px;padding:26px;border:1px solid var(--linea);text-align:center}
+  input,select{padding:11px 12px;border:1.5px solid var(--linea);border-radius:10px;font-size:16px;font-family:inherit;background:#fff}
+  input:focus,select:focus{outline:none;border-color:var(--azul2)}
+  .btn{background:var(--azul);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer}
+  .btn.ok{background:var(--ok)} .btn.acento{background:var(--acento)}
+  .btn.sec{background:#fff;color:var(--azul);border:1.5px solid var(--azul)}
+  .btn.peq{padding:7px 11px;font-size:13px}
+  .btn.mal{background:#fff;color:var(--mal);border:1.5px solid #f1b8b2}
+  .btn:disabled{opacity:.55;cursor:wait}
+  .buscador{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .buscador input{flex:1;min-width:220px}
+  .lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+  .ped{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+  .ped .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .ped .folio{font-size:22px;font-weight:900;color:var(--azul);letter-spacing:1px}
+  .est{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .est.p{background:#fff4e0;color:var(--warn)} .est.g{background:#e6f4ee;color:var(--ok)}
+  .est.c{background:#e8eefc;color:var(--azul2)} .est.x{background:#fdecea;color:var(--mal)}
+  .quien{font-size:14px;line-height:1.4} .quien small{color:var(--gris)}
+  .items{font-size:14px;border-top:1px dashed var(--linea);padding-top:8px}
+  .items div{display:flex;justify-content:space-between}
+  .tot{display:flex;justify-content:space-between;font-weight:800;font-size:18px}
+  .acc{display:flex;gap:6px;flex-wrap:wrap}
+  .pos{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+  @media(max-width:800px){.pos{grid-template-columns:1fr}}
+  .posbusca{position:relative;margin-bottom:12px}
+  .posbusca input{width:100%;box-sizing:border-box;font-size:17px;padding:12px 44px 12px 14px;border:1.5px solid var(--linea);border-radius:12px;background:#fff;font-family:inherit}
+  .posbusca input:focus{outline:none;border-color:var(--azul)}
+  .posbusca button{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:50%;background:#eef0f3;color:#555;font-size:20px;line-height:1;cursor:pointer;display:none}
+  .posbusca.con-texto button{display:block}
+  .posgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .pbtn{background:#fff;border:1.5px solid var(--linea);border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;padding:0;font-family:inherit;position:relative}
+  .pbtn:active{transform:scale(.97)}
+  .pbtn .im{aspect-ratio:4/3;background:#eef0f3 center/cover no-repeat}
+  .pbtn .tx{padding:8px 10px;font-size:14px;font-weight:700}
+  .pbtn .tx span{display:block;color:var(--azul);font-weight:800}
+  .pbtn .cnt{position:absolute;top:6px;right:6px;background:var(--acento);color:#fff;border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;font-weight:800}
+  .ticketv{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:14px 16px;position:sticky;top:12px}
+  .lv{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--linea);font-size:14px}
+  .lv .nm{flex:1}
+  .lv button{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--azul);background:#fff;color:var(--azul);font-weight:800;cursor:pointer}
+  .mvelo{position:fixed;inset:0;background:rgba(15,20,30,.5);display:none;place-items:center;z-index:30;padding:16px}
+  .mvelo.ab{display:grid}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .chips button{border:1.5px solid var(--linea);background:#fff;border-radius:999px;padding:7px 13px;font:inherit;font-weight:700;cursor:pointer;color:var(--azul)}
+  .chips button.on{background:var(--azul);color:#fff;border-color:var(--azul)}
+  .pbtn.libre{border-style:dashed;border-color:var(--acento);display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:150px;color:var(--acento)}
+  .pbtn.libre .mas{font-size:34px;font-weight:800;line-height:1}
+  .modal{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .anul{font-size:13px;background:#f3f4f6;border-radius:8px;padding:6px 10px;color:#374151}
+  .anul.sol{background:#fff4e0;color:var(--warn);font-weight:600}
+  .lock{font-size:13px;color:var(--gris);align-self:center}
+  .din2{font-size:12px;color:var(--gris);margin-top:4px}
+  .vacio{color:var(--gris);text-align:center;padding:40px}
+  .msg{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;display:none;z-index:20;max-width:90vw}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+  .tile{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:14px 16px;overflow:hidden;cursor:pointer}
+  .tile small{color:var(--gris);display:block;font-size:13px}
+  .tile b{font-size:26px;display:block;margin-top:4px}
+  .tile .din{font-size:15px;color:var(--gris);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--linea)}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--linea);font-size:14px}
+  th{background:#eef2f7;font-size:13px;color:#374151}
+  td.n,th.n{text-align:right}
+  .prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .prod{background:#fff;border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+  .prod .ph{aspect-ratio:4/3;background:#eef0f3;position:relative;display:grid;place-items:center;color:#a0a8b5;font-size:13px}
+  .prod .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .prod .bd{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+  .prod .bd .nm{font-weight:700}
+  .prod .bd .sub{font-size:12px;color:var(--gris)}
+  .formprod{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .formprod b{width:100%;font-size:15px}
+  .formprod #fpNombre{flex:1;min-width:180px}
+  .nota{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px 14px;font-size:14px;color:#374151;margin-bottom:14px;line-height:1.45}
+  /* Ticket */
+  #ticket{display:none}
+  @media print{
+    @page{margin:6mm}
+    body{background:#fff}
+    header,main,.msg{display:none!important}
+    #ticket{display:block;width:72mm;font-family:"Courier New",monospace;font-size:12px;color:#000}
+    #ticket h2{font-size:15px;text-align:center;margin:0 0 4px}
+    #ticket .c{text-align:center}
+    #ticket .f{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}
+    #ticket hr{border:0;border-top:1px dashed #000;margin:6px 0}
+    #ticket .r{display:flex;justify-content:space-between;gap:6px}
+    #ticket .big{font-size:14px;font-weight:700}
+  }
+</style>
+</head>
+<body>
+<header id="hdr" style="display:none">
+  <h1 id="titulo">Caja</h1>
+  <div class="tabs">
+    <button class="tab act" data-t="cobrar" onclick="tab('cobrar')">Cobrar pedidos</button>
+    <button class="tab" data-t="venta" onclick="tab('venta')">Venta directa</button>
+    <button class="tab" data-t="resumen" onclick="tab('resumen')">Resumen</button>
+    <button class="tab" data-t="productos" onclick="tab('productos')">Productos y fotos</button>
+    <button class="tab" onclick="salir()">Salir</button>
+  </div>
+</header>
+
+<main>
+  <div id="vLogin" class="login">
+    <h2 style="margin-top:0">Caja · Pedidos</h2>
+    <p style="color:var(--gris);font-size:14px">Escribe el PIN de Caja</p>
+    <input id="pin" type="password" inputmode="numeric" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px" onkeydown="if(event.key==='Enter')entrar()">
+    <div style="color:var(--mal);font-size:14px;min-height:1.2em;margin:8px 0" id="errPin"></div>
+    <button class="btn" style="width:100%" id="btnPin" onclick="entrar()">Entrar</button>
+  </div>
+
+  <div id="vCobrar" style="display:none">
+    <div class="buscador">
+      <input id="q" placeholder="Folio (ej. 12 o K-0012), nombre del tutor, alumno o teléfono" oninput="buscarLuego()" onkeydown="if(event.key==='Enter')buscar()">
+      <select id="fEstado" onchange="buscar()">
+        <option value="">Todos</option>
+        <option>Pendiente de pago</option><option>Pagado</option><option>Canjeado</option><option>Cancelado</option>
+        <option value="CANCELACION">↩️ Con cobro cancelado</option>
+      </select>
+      <button class="btn sec" onclick="buscar()">Actualizar</button>
+    </div>
+    <div class="lista" id="lista"></div>
+  </div>
+
+  <div id="vVenta" style="display:none">
+    <div class="pos">
+      <div>
+        <div class="nota" style="margin-bottom:12px">Toca un producto para agregarlo. Para ventas en la kermés <b>sin nombre</b>: el cobro se suma a los ingresos junto con los pedidos.</div>
+        <div class="posbusca">
+          <input id="posBuscar" type="text" placeholder="🔍 Buscar producto por nombre (ej. flautas)" autocomplete="off" oninput="pintarVenta()" onkeydown="posEnter(event)">
+          <button type="button" id="posLimpiar" onclick="posLimpiarBusqueda()" aria-label="Borrar búsqueda">×</button>
+        </div>
+        <div class="posgrid" id="posGrid"><div class="vacio">Cargando productos…</div></div>
+      </div>
+      <div class="ticketv">
+        <h3 style="margin:0 0 8px">Venta actual</h3>
+        <div id="posLineas"><div class="vacio" style="padding:20px">Sin productos</div></div>
+        <div class="tot" style="margin:10px 0"><span>Total</span><span id="posTotal">$0.00</span></div>
+        <label style="font-size:13px;font-weight:600;color:#374151">Recibido (opcional, para calcular cambio)</label>
+        <input id="posRecibido" type="number" min="0" step="1" inputmode="decimal" style="width:100%;margin:4px 0 6px" oninput="pintarVenta()">
+        <div id="posCambio" style="font-size:15px;min-height:1.3em;margin-bottom:10px"></div>
+        <button class="btn ok" id="posCobrar" style="width:100%;padding:14px;font-size:17px" onclick="cobrarVenta()" disabled>Cobrar</button>
+        <button class="btn sec peq" style="width:100%;margin-top:8px" onclick="limpiarVenta()">Vaciar</button>
+        <div id="posUltima" style="font-size:13px;color:var(--gris);margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="vResumen" style="display:none">
+    <h3 style="margin:0 0 10px">Ingresos</h3>
+    <div class="tiles" id="tilesIng"></div>
+    <div id="tablaCaja" style="margin-bottom:14px"></div>
+    <div id="tablaDia" style="margin-bottom:22px"></div>
+    <h3 style="margin:6px 0 10px">Pedidos por estado</h3>
+    <div class="tiles" id="tiles"></div>
+    <h3 style="margin:6px 0 10px">Para preparar (sin cancelados)</h3>
+    <div id="tablaProd"></div>
+  </div>
+
+  <div id="vProductos" style="display:none">
+    <div class="formprod" style="align-items:stretch">
+      <b>Imagen del encabezado</b>
+      <div id="bannerPrev" style="flex:1;min-width:240px;aspect-ratio:3/1;border-radius:10px;background:#eef0f3 center/cover no-repeat;display:grid;place-items:center;color:#a0a8b5;font-size:13px">Sin imagen</div>
+      <div style="display:flex;flex-direction:column;gap:8px;justify-content:center">
+        <button class="btn acento peq" id="bBanner" onclick="elegirFoto('__banner__')">Subir imagen</button>
+        <button class="btn mal peq" onclick="quitarBanner()">Quitar</button>
+      </div>
+      <div style="width:100%;font-size:12px;color:var(--gris)">Horizontal, proporción 3:1 (ej. 1800 × 600). Deja el centro libre: ahí va el título.</div>
+    </div>
+    <div class="nota">Toca <b>Subir foto</b> para elegir una imagen del celular o la computadora. Se reduce automáticamente y se guarda en una carpeta de Drive. Los precios, nombres y si un producto está activo se cambian en la hoja <b>Productos</b>.</div>
+    <div class="formprod">
+      <b id="fpTitulo">Agregar producto</b>
+      <input id="fpNombre" placeholder="Nombre (ej. Hot dogs)" maxlength="60">
+      <input id="fpUnidades" type="number" min="1" value="1" title="Piezas por orden" style="width:110px">
+      <input id="fpPrecio" type="number" min="0" step="0.5" placeholder="Precio" style="width:120px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="fpActivo" checked style="width:auto"> Visible</label>
+      <button class="btn ok" id="fpBtn" onclick="guardarProd()">Agregar</button>
+      <button class="btn sec" id="fpCancelar" style="display:none" onclick="limpiarForm()">Cancelar</button>
+      <input type="hidden" id="fpId">
+    </div>
+    <div style="font-size:12px;color:var(--gris);margin:-6px 0 12px">El número junto al nombre son las piezas por orden (ej. 3 para "orden de 3 flautas"). Si dejas el precio vacío, sale como "Precio próximamente".</div>
+    <div class="prods" id="prods"></div>
+  </div>
+</main>
+
+<div class="mvelo" id="mVelo">
+  <div class="modal" role="dialog" aria-labelledby="mTitulo">
+    <h3 id="mTitulo" style="margin:0 0 4px">Cancelar cobro</h3>
+    <div id="mInfo" style="font-size:14px;color:var(--gris);margin-bottom:12px"></div>
+    <label for="mMotivo" style="font-size:13px;font-weight:700;color:#374151">Motivo</label>
+    <select id="mMotivo" style="width:100%;margin:4px 0 10px" onchange="motivoCambio()">
+      <option value="">— Elige el motivo —</option>
+      <option>Me equivoqué de producto o cantidad</option>
+      <option>Cobré el folio equivocado</option>
+      <option>Cobro duplicado</option>
+      <option>El cliente se arrepintió</option>
+      <option>Se acabó el producto</option>
+      <option>Error al cobrar o dar cambio</option>
+      <option value="OTRO">Otro (escribir el motivo)</option>
+    </select>
+    <div id="mOtroBox" style="display:none">
+      <label for="mOtro" style="font-size:13px;font-weight:700;color:#374151">¿Por qué?</label>
+      <textarea id="mOtro" rows="2" maxlength="140" style="width:100%;margin:4px 0 10px;padding:10px;border:1.5px solid var(--linea);border-radius:10px;font:inherit"></textarea>
+    </div>
+    <div id="mErr" style="color:var(--mal);font-size:13px;min-height:1.1em;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn sec" style="flex:1" onclick="cerrarMotivo(null)">No cancelar</button>
+      <button class="btn mal" style="flex:1;background:var(--mal);color:#fff;border:0" onclick="confirmarMotivo()">Sí, cancelar cobro</button>
+    </div>
+  </div>
+</div>
+<div class="mvelo" id="lVelo">
+  <div class="modal" role="dialog" aria-labelledby="lTitulo">
+    <h3 id="lTitulo" style="margin:0 0 4px">Producto libre</h3>
+    <div style="font-size:14px;color:var(--gris);margin-bottom:12px">Para cobrar algo que no está en la lista.</div>
+    <label for="lNombre" style="font-size:13px;font-weight:700;color:#374151">¿Qué es?</label>
+    <input id="lNombre" maxlength="40" placeholder="Ej. Pastel, café, rifa, refresco" style="width:100%;margin:4px 0 10px">
+    <label style="font-size:13px;font-weight:700;color:#374151">Precio</label>
+    <div class="chips" id="lChips"></div>
+    <input id="lPrecio" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="O escribe el precio" style="width:100%;margin:6px 0 10px" oninput="marcarChip()">
+    <label for="lCant" style="font-size:13px;font-weight:700;color:#374151">Cantidad</label>
+    <input id="lCant" type="number" min="1" value="1" inputmode="numeric" style="width:110px;margin:4px 0 6px;display:block">
+    <div id="lErr" style="color:var(--mal);font-size:13px;min-height:1.1em;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn sec" style="flex:1" onclick="cerrarLibre()">Cancelar</button>
+      <button class="btn ok" style="flex:1" onclick="agregarLibre()">Agregar a la venta</button>
+    </div>
+  </div>
+</div>
+<div id="ticket"></div>
+<div class="msg" id="msg"></div>
+<input type="file" id="archivo" accept="image/*" style="display:none" onchange="fotoElegida(this)">
+
+<script>
+  // Panel publicado en GitHub Pages: habla con Apps Script sin usar la cuenta de Google
+  // del navegador (así no falla con varias cuentas abiertas).
+  const API = 'https://script.google.com/macros/s/AKfycbyriiDblIqRyAuWhgx9JZPwAmcEM_c1LDtcSBRmZvHxB-q2c-Nj3p8v6g00TLvIsWkRjA/exec';
+  const INI = { evento: 'Kermés' };
+  let PIN = '';
+  let ROL = 'caja';
+  let USUARIO = '';
+  let pedidos = [];
+  let tActual = 'cobrar';
+  let timer = null;
+  let prodFoto = null;
+  const $ = id => document.getElementById(id);
+  const dinero = n => '$' + Number(n).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const EST = {'Pendiente de pago':'p','Pagado':'g','Canjeado':'c','Cancelado':'x'};
+
+  function aviso(t){ const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(m._t); m._t = setTimeout(() => m.style.display = 'none', 3500); }
+  function run(fn, ...args){
+    return fetch(API, {
+      method: 'POST', credentials: 'omit', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ accion: 'caja', fn, args }),
+    })
+      .catch(() => { throw new Error('Sin conexión. Revisa el internet e intenta de nuevo.'); })
+      .then(r => r.json())
+      .then(res => { if (!res.ok) throw new Error(res.error || 'Ocurrió un error.'); return res.data; });
+  }
+
+  async function entrar(){
+    const b = $('btnPin'); b.disabled = true; $('errPin').textContent = '';
+    try {
+      const pin = $('pin').value;
+      const r = await run('cajaEntrar', pin);
+      PIN = pin;
+      ROL = r.rol || 'caja';
+      USUARIO = r.usuario || '';
+      $('titulo').textContent = (r.usuario || (ROL === 'admin' ? 'Administración' : 'Caja')) + ' · ' + r.evento;
+      INI.evento = r.evento; document.title = $('titulo').textContent;
+      document.querySelector('.tab[data-t="productos"]').style.display = ROL === 'admin' ? '' : 'none';
+      $('vLogin').style.display = 'none'; $('hdr').style.display = 'flex';
+      tab(/^Caja \d+$/.test(USUARIO) ? 'venta' : 'cobrar'); // Caja 1, 2…: día de la kermés; Caja del colegio: pedidos
+    } catch(e){ $('errPin').textContent = e.message; }
+    b.disabled = false;
+  }
+  function salir(){
+    PIN = ''; $('pin').value = ''; $('hdr').style.display = 'none';
+    ['vCobrar','vResumen','vProductos','vVenta'].forEach(id => $(id).style.display = 'none');
+    $('vLogin').style.display = 'block'; $('pin').focus();
+  }
+
+  function tab(t){
+    tActual = t;
+    document.querySelectorAll('.tab[data-t]').forEach(b => b.classList.toggle('act', b.dataset.t === t));
+    $('vCobrar').style.display = t === 'cobrar' ? 'block' : 'none';
+    $('vResumen').style.display = t === 'resumen' ? 'block' : 'none';
+    $('vProductos').style.display = t === 'productos' ? 'block' : 'none';
+    $('vVenta').style.display = t === 'venta' ? 'block' : 'none';
+    if (t === 'venta') cargarVenta();
+    if (t === 'cobrar') { buscar(); setTimeout(() => $('q').focus(), 50); }
+    if (t === 'resumen') resumen();
+    if (t === 'productos') productos();
+  }
+
+  /* ---------- COBRAR ---------- */
+  function buscarLuego(){ clearTimeout(timer); timer = setTimeout(buscar, 350); }
+  async function buscar(){
+    try {
+      pedidos = await run('cajaBuscar', PIN, $('q').value, $('fEstado').value);
+      pintarLista();
+    } catch(e){ aviso(e.message); }
+  }
+  function pintarLista(){
+    if (!pedidos.length){ $('lista').innerHTML = '<div class="vacio">No hay pedidos con esa búsqueda.</div>'; return; }
+    $('lista').innerHTML = pedidos.map(p => {
+      const e = p.estado; let acc = '';
+      if (e === 'Pendiente de pago') acc =
+        '<button class="btn ok" onclick="cobrar(\'' + p.folio + '\')">Cobrar ' + dinero(p.total) + '</button>' +
+        '<button class="btn mal peq" onclick="estado(\'' + p.folio + '\',\'Cancelado\')">Cancelar</button>';
+      const admin = ROL === 'admin';
+      const cobrado = e === 'Pagado' || e === 'Canjeado';
+      const puedeCancelar = admin || (p.cobroPor && p.cobroPor === USUARIO);
+      if (e === 'Pagado') acc = '<button class="btn peq" onclick="estado(\'' + p.folio + '\',\'Canjeado\')">Marcar canjeado</button>';
+      if (e === 'Canjeado') acc = '<span class="lock">✅ Entregado</span>';
+      if (cobrado) {
+        if (puedeCancelar) acc += '<button class="btn mal peq" onclick="anular(\'' + p.folio + '\')">Cancelar cobro</button>';
+        else acc += '<span class="lock">🔒 Lo cobró ' + esc(p.cobroPor || 'otra caja') + '</span>';
+      }
+      if (e === 'Cancelado') acc = admin && p.folio.indexOf('K-') === 0
+        ? '<button class="btn sec peq" onclick="estado(\'' + p.folio + '\',\'Pendiente de pago\')">Reactivar</button>'
+        : '<span class="lock">Cancelado</span>';
+      const aviso2 = p.anulacion ? '<div class="anul sol">↩️ ' + esc(p.anulacion) + '</div>' : '';
+      return '<div class="ped"><div class="top"><span class="folio">' + esc(p.folio) + '</span><span class="est ' + (EST[e]||'') + '">' + esc(e) + '</span></div>' +
+        '<div class="quien"><b>' + esc(p.tutor) + '</b>' + (p.telefono ? ' · ' + esc(p.telefono) : '') +
+        (p.alumno ? '<br>Alumno: ' + esc(p.alumno) + (p.grupo ? ' (' + esc(p.grupo) + ')' : '') : '') +
+        '<br><small>Pedido: ' + esc(p.fecha) + (p.fechaPago ? ' · Pagado: ' + esc(p.fechaPago) : '') + (p.cobroPor ? ' · Cobró: <b>' + esc(p.cobroPor) + '</b>' : '') + '</small>' +
+        (p.comentario ? '<br><small>📝 ' + esc(p.comentario) + '</small>' : '') + '</div>' +
+        '<div class="items">' + p.items.map(i => '<div><span>' + i.cantidad + ' × ' + esc(i.nombre) + '</span><span>' + dinero(i.subtotal) + '</span></div>').join('') + '</div>' +
+        '<div class="tot"><span>Total</span><span>' + dinero(p.total) + '</span></div>' + aviso2 + '<div class="acc">' + acc + '</div></div>';
+    }).join('');
+  }
+
+  async function estado(folio, nuevo, silencioso){
+    if (!silencioso && nuevo === 'Cancelado' && !confirm('¿Cancelar el pedido ' + folio + '?')) return null;
+    if (!silencioso && nuevo === 'Pendiente de pago' && !confirm('¿Regresar ' + folio + ' a "Pendiente de pago"? Si estaba cobrado, quedará registrada la anulación del cobro.')) return null;
+    if (!silencioso && nuevo === 'Canjeado' && !confirm('¿Entregar los productos del pedido ' + folio + '?')) return null;
+    try {
+      const p = await run('cajaCambiarEstado', PIN, folio, nuevo);
+      const i = pedidos.findIndex(x => x.folio === folio);
+      if (i >= 0) pedidos[i] = p;
+      pintarLista();
+      aviso(folio + ' → ' + nuevo);
+      return p;
+    } catch(e){ aviso(e.message); return null; }
+  }
+
+  let resolverMotivo = null;
+  function pedirMotivo(folio, total, venta){
+    $('mInfo').textContent = folio + ' · ' + dinero(total) + ' · ' +
+      (venta ? 'la venta quedará cancelada.' : 'el pedido regresará a "Pendiente de pago".') +
+      ' Quedará registrado que lo canceló ' + USUARIO + '.';
+    $('mMotivo').value = ''; $('mOtro').value = ''; $('mOtroBox').style.display = 'none'; $('mErr').textContent = '';
+    $('mVelo').classList.add('ab');
+    setTimeout(() => $('mMotivo').focus(), 50);
+    return new Promise(r => { resolverMotivo = r; });
+  }
+  function motivoCambio(){
+    const otro = $('mMotivo').value === 'OTRO';
+    $('mOtroBox').style.display = otro ? 'block' : 'none';
+    $('mErr').textContent = '';
+    if (otro) setTimeout(() => $('mOtro').focus(), 30);
+  }
+  function confirmarMotivo(){
+    const v = $('mMotivo').value;
+    if (!v) { $('mErr').textContent = 'Elige un motivo.'; return; }
+    let m = v;
+    if (v === 'OTRO') {
+      const t = $('mOtro').value.replace(/\s+/g, ' ').trim();
+      if (t.length < 4) { $('mErr').textContent = 'Escribe por qué se cancela.'; return; }
+      m = 'Otro: ' + t;
+    }
+    cerrarMotivo(m);
+  }
+  function cerrarMotivo(m){
+    $('mVelo').classList.remove('ab');
+    if (resolverMotivo) { const r = resolverMotivo; resolverMotivo = null; r(m); }
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (resolverMotivo) cerrarMotivo(null); cerrarLibre(); } });
+
+  async function anular(folio){
+    const p0 = pedidos.find(x => x.folio === folio) || { total: ultimaVenta && ultimaVenta.folio === folio ? ultimaVenta.total : 0 };
+    const motivo = await pedirMotivo(folio, p0.total, folio.indexOf('V-') === 0);
+    if (!motivo) return null;
+    try {
+      const p = await run('cajaAnularCobro', PIN, folio, motivo);
+      const i = pedidos.findIndex(x => x.folio === folio); if (i >= 0) pedidos[i] = p;
+      pintarLista(); aviso('Cobro de ' + folio + ' cancelado por ' + USUARIO);
+      return p;
+    } catch(e){ aviso(e.message); return null; }
+  }
+
+  async function cobrar(folio){
+    const p = pedidos.find(x => x.folio === folio);
+    if (!confirm('Cobrar ' + dinero(p.total) + ' a ' + p.tutor + ' (folio ' + folio + ')?\n\nUna vez cobrado ya no se puede modificar.')) return;
+    await estado(folio, 'Pagado', true);
+  }
+
+  function imprimir(folio){
+    const p = pedidos.find(x => x.folio === folio);
+    $('ticket').innerHTML =
+      '<h2>' + esc(INI.evento) + '</h2><div class="c">PEDIDO PAGADO</div>' +
+      '<div class="f">' + esc(p.folio) + '</div><hr>' +
+      '<div>' + esc(p.tutor) + '</div><div>Alumno: ' + esc(p.alumno) + (p.grupo ? ' (' + esc(p.grupo) + ')' : '') + '</div><hr>' +
+      p.items.map(i => '<div class="r"><span>' + i.cantidad + ' x ' + esc(i.nombre) + '</span><span>' + dinero(i.subtotal) + '</span></div>').join('') +
+      '<hr><div class="r big"><span>TOTAL PAGADO</span><span>' + dinero(p.total) + '</span></div>' +
+      '<div style="margin-top:4px">Pagado: ' + esc(p.fechaPago || '') + '</div><hr>' +
+      '<div class="c">Presenta este ticket en la kermés<br>para recoger tus productos.</div>';
+    setTimeout(() => window.print(), 50);
+  }
+
+  /* ---------- VENTA DIRECTA ---------- */
+  let posProd = [], posCarrito = {}, ultimaVenta = null;
+  let posLibres = {}, libreN = 0; // clave -> { nombre, precio }
+  const PRECIOS_RAPIDOS = [5, 10, 15, 20, 25, 30, 40, 50, 100];
+  function itemsVenta(){
+    return posProd.filter(p => posCarrito[p.id]).map(p => ({ key: p.id, nombre: p.nombre, precio: p.precio, cant: posCarrito[p.id] }))
+      .concat(Object.keys(posLibres).filter(k => posCarrito[k]).map(k => ({ key: k, nombre: posLibres[k].nombre, precio: posLibres[k].precio, cant: posCarrito[k], libre: true })));
+  }
+  function abrirLibre(){
+    $('lNombre').value = ''; $('lPrecio').value = ''; $('lCant').value = 1; $('lErr').textContent = '';
+    $('lChips').innerHTML = PRECIOS_RAPIDOS.map(v => '<button type="button" onclick="elegirPrecio(' + v + ')">$' + v + '</button>').join('');
+    $('lVelo').classList.add('ab'); setTimeout(() => $('lNombre').focus(), 50);
+  }
+  function cerrarLibre(){ $('lVelo').classList.remove('ab'); }
+  function elegirPrecio(v){ $('lPrecio').value = v; marcarChip(); }
+  function marcarChip(){
+    const v = Number($('lPrecio').value);
+    document.querySelectorAll('#lChips button').forEach(b => b.classList.toggle('on', Number(b.textContent.slice(1)) === v));
+  }
+  function agregarLibre(){
+    const nombre = $('lNombre').value.replace(/\s+/g, ' ').trim();
+    const precio = Math.round(Number($('lPrecio').value) * 100) / 100;
+    const cant = Math.floor(Number($('lCant').value));
+    if (!nombre) { $('lErr').textContent = 'Escribe qué es.'; return; }
+    if (!(precio > 0)) { $('lErr').textContent = 'Elige o escribe el precio.'; return; }
+    if (precio > 5000) { $('lErr').textContent = 'El precio es demasiado alto.'; return; }
+    if (!(cant > 0)) { $('lErr').textContent = 'La cantidad debe ser 1 o más.'; return; }
+    const key = 'L' + (++libreN);
+    posLibres[key] = { nombre, precio };
+    posCarrito[key] = cant;
+    cerrarLibre(); pintarVenta();
+  }
+  async function cargarVenta(){
+    try { posProd = await run('cajaCatalogoVenta', PIN); pintarVenta(); }
+    catch(e){ aviso(e.message); }
+  }
+  function posCambiar(id, d){
+    const n = Math.max(0, (posCarrito[id] || 0) + d);
+    if (n) posCarrito[id] = n; else { delete posCarrito[id]; delete posLibres[id]; }
+    pintarVenta();
+  }
+  function posTotal(){ return itemsVenta().reduce((s, x) => s + x.cant * x.precio, 0); }
+  function posNormal(t){ return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+  function posFiltrados(){
+    const q = posNormal($('posBuscar') ? $('posBuscar').value : '');
+    return q ? posProd.filter(p => posNormal(p.nombre).includes(q)) : posProd;
+  }
+  function posLimpiarBusqueda(){ $('posBuscar').value = ''; pintarVenta(); $('posBuscar').focus(); }
+  function posEnter(e){
+    if (e.key === 'Escape') { posLimpiarBusqueda(); return; }
+    if (e.key !== 'Enter') return;
+    const f = posFiltrados();
+    if (f.length === 1 && $('posBuscar').value.trim()) { posCambiar(f[0].id, 1); posLimpiarBusqueda(); }
+  }
+  function pintarVenta(){
+    const busca = $('posBuscar') ? $('posBuscar').value.trim() : '';
+    if ($('posBuscar')) $('posBuscar').parentNode.classList.toggle('con-texto', !!busca);
+    const lista = posFiltrados();
+    const sinRes = busca && !lista.length ? '<div class="vacio" style="grid-column:1/-1;padding:16px">No hay productos con “' + esc(busca) + '”</div>' : '';
+    $('posGrid').innerHTML = posProd.length ? sinRes + lista.map(p =>
+      '<button class="pbtn" onclick="posCambiar(\'' + p.id + '\',1)">' +
+      '<div class="im"' + (p.foto ? ' style="background-image:url(&quot;' + esc(p.foto) + '&quot;)"' : '') + '></div>' +
+      (posCarrito[p.id] ? '<div class="cnt">' + posCarrito[p.id] + '</div>' : '') +
+      '<div class="tx">' + esc(p.nombre) + '<span>' + dinero(p.precio) + '</span></div></button>').join('')
+      + '<button class="pbtn libre" onclick="abrirLibre()"><div class="mas">+</div><div class="tx" style="text-align:center">Producto libre<span style="color:var(--gris);font-weight:600;font-size:12px">Escribe nombre y precio</span></div></button>'
+      : '<button class="pbtn libre" onclick="abrirLibre()"><div class="mas">+</div><div class="tx">Producto libre</div></button>';
+    const l = itemsVenta();
+    $('posLineas').innerHTML = l.length ? l.map(x =>
+      '<div class="lv"><button onclick="posCambiar(\'' + x.key + '\',-1)">−</button><b>' + x.cant + '</b>' +
+      '<button onclick="posCambiar(\'' + x.key + '\',1)">+</button><span class="nm">' + (x.libre ? '<i>Libre ·</i> ' : '') + esc(x.nombre) +
+      (x.libre ? ' <small style="color:var(--gris)">(' + dinero(x.precio) + ' c/u)</small>' : '') + '</span><b>' + dinero(x.cant * x.precio) + '</b></div>').join('')
+      : '<div class="vacio" style="padding:20px">Sin productos</div>';
+    const t = posTotal();
+    $('posTotal').textContent = dinero(t);
+    $('posCobrar').disabled = !t;
+    $('posCobrar').textContent = t ? 'Cobrar ' + dinero(t) : 'Cobrar';
+    const rec = Number($('posRecibido').value);
+    $('posCambio').innerHTML = rec && t ? (rec >= t ? 'Cambio: <b>' + dinero(rec - t) + '</b>' : '<span style="color:var(--mal)">Faltan ' + dinero(t - rec) + '</span>') : '';
+  }
+  async function cancelarUltima(){
+    if (!ultimaVenta) return;
+    const r = await anular(ultimaVenta.folio);
+    if (r) { $('posUltima').innerHTML = 'Venta ' + esc(ultimaVenta.folio) + ' cancelada por ' + esc(USUARIO) + '.'; ultimaVenta = null; }
+  }
+  function limpiarVenta(){ posCarrito = {}; posLibres = {}; $('posRecibido').value = ''; pintarVenta(); }
+  async function cobrarVenta(){
+    const t = posTotal(); if (!t) return;
+    if (!confirm('Cobrar ' + dinero(t) + ' (venta directa)?\n\nUna vez cobrado ya no se puede modificar.')) return;
+    const b = $('posCobrar'); b.disabled = true; b.textContent = 'Registrando…';
+    try {
+      const r = await run('cajaVentaDirecta', PIN, itemsVenta().map(x => x.libre
+        ? { libre: true, nombre: x.nombre, precio: x.precio, cantidad: x.cant }
+        : { id: x.key, cantidad: x.cant }));
+      ultimaVenta = r;
+      $('posUltima').innerHTML = 'Última venta: <b>' + esc(r.folio) + '</b> · ' + dinero(r.total) +
+        ' <button class="btn mal peq" style="margin-left:6px" onclick="cancelarUltima()">Cancelar esta venta</button>';
+      aviso('Venta ' + r.folio + ' registrada');
+      limpiarVenta();
+    } catch(e){ aviso(e.message); pintarVenta(); }
+  }
+
+  /* ---------- RESUMEN ---------- */
+  async function resumen(){
+    $('tiles').innerHTML = '<div class="vacio">Cargando…</div>'; $('tablaProd').innerHTML = '';
+    try {
+      const r = await run('cajaResumen', PIN);
+      const tile = (titulo, valor, sub) =>
+        '<div class="tile" onclick="const d=this.querySelector(\'.din\');d.textContent=d.dataset.v===d.textContent?\'Toca para ver importe\':d.dataset.v">' +
+        '<small>' + titulo + '</small><b class="din" data-v="' + valor + '" style="font-size:22px">Toca para ver importe</b>' + (sub ? '<div class="din2">' + sub + '</div>' : '') + '</div>';
+      $('tilesIng').innerHTML =
+        tile('💰 Total cobrado', dinero(r.ingresos.cobrado), r.ingresos.movimientos + ' movimientos en la hoja Cobros') +
+        tile('⏳ Por cobrar (pendientes)', dinero(r.ingresos.porCobrar), (r.porEstado['Pendiente de pago'] || {pedidos:0}).pedidos + ' pedidos sin pagar');
+      $('tablaCaja').innerHTML = r.ingresos.porCaja.length
+        ? '<table><tr><th>Corte por caja</th><th class="n">Cobros</th><th class="n">Cancelaciones</th><th class="n">Debe entregar</th></tr>' +
+          r.ingresos.porCaja.map(d => '<tr><td>' + esc(d.caja) + '</td><td class="n">' + d.cobros + '</td><td class="n">' + (d.cancelaciones || 0) + '</td><td class="n">' + dinero(d.dinero) + '</td></tr>').join('') + '</table>'
+        : '';
+      $('tablaDia').innerHTML = r.ingresos.porDia.length
+        ? '<table><tr><th>Corte por día</th><th class="n">Cobros</th><th class="n">Importe</th></tr>' +
+          r.ingresos.porDia.map(d => '<tr><td>' + esc(d.dia) + '</td><td class="n">' + d.cobros + '</td><td class="n">' + dinero(d.dinero) + '</td></tr>').join('') + '</table>'
+        : '';
+      $('tiles').innerHTML = Object.keys(r.porEstado).map(k =>
+        '<div class="tile" onclick="const d=this.querySelector(\'.din\');d.textContent=d.dataset.v===d.textContent?\'Toca para ver importe\':d.dataset.v">' +
+        '<small>' + esc(k) + '</small><b>' + r.porEstado[k].pedidos + '</b>' +
+        '<div class="din" data-v="' + dinero(r.porEstado[k].dinero) + '">Toca para ver importe</div></div>').join('');
+      $('tablaProd').innerHTML = r.porProducto.length
+        ? '<table><tr><th>Producto</th><th class="n">Órdenes</th><th class="n">Piezas</th><th class="n">Órdenes pagadas</th><th class="n">Vendidas en mostrador</th><th class="n">Cobrado</th></tr>' +
+          r.porProducto.map(x => '<tr><td>' + esc(x.nombre) + '</td><td class="n">' + x.ordenes + '</td><td class="n">' + x.piezas + '</td><td class="n">' + x.ordenesPagadas + '</td><td class="n">' + (x.ventaDirecta || 0) + '</td><td class="n">' + dinero(x.dineroCobrado || 0) + '</td></tr>').join('') + '</table>'
+        : '<div class="vacio">Aún no hay pedidos.</div>';
+    } catch(e){ aviso(e.message); }
+  }
+
+  /* ---------- PRODUCTOS Y FOTOS ---------- */
+  let listaProd = [];
+  async function productos(){
+    try { listaProd = await run('cajaProductos', PIN); pintarProductos(); } catch(e){ aviso(e.message); }
+    try { pintarBanner(await run('cajaBanner', PIN)); } catch(e){}
+  }
+  function pintarBanner(url){
+    const d = $('bannerPrev');
+    d.style.backgroundImage = url ? 'url("' + url.replace(/["\\]/g, '') + '")' : '';
+    d.textContent = url ? '' : 'Sin imagen';
+  }
+  async function quitarBanner(){
+    if (!confirm('¿Quitar la imagen del encabezado?')) return;
+    try { await run('cajaQuitarBanner', PIN); pintarBanner(''); aviso('Imagen quitada'); } catch(e){ aviso(e.message); }
+  }
+  function pintarProductos(){
+    $('prods').innerHTML = listaProd.map(p =>
+      '<div class="prod"><div class="ph">Sin foto' + (p.foto ? '<img src="' + esc(p.foto) + '" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</div>' +
+      '<div class="bd"><div><div class="nm">' + esc(p.nombre) + '</div><div class="sub">' +
+      (p.precio ? dinero(p.precio) : 'Sin precio (no se puede pedir)') + (p.unidades > 1 ? ' · Orden de ' + p.unidades : '') + (p.activo ? '' : ' · Oculto') + '</div></div>' +
+      '<div class="acc"><button class="btn acento peq" id="bf_' + p.id + '" onclick="elegirFoto(\'' + p.id + '\')">' + (p.foto ? 'Cambiar foto' : 'Subir foto') + '</button>' +
+      '<button class="btn sec peq" onclick="editarProd(\'' + p.id + '\')">Editar</button>' +
+      (p.foto ? '<button class="btn mal peq" onclick="quitarFoto(\'' + p.id + '\')">Quitar foto</button>' : '') + '</div></div></div>').join('');
+  }
+  function limpiarForm(){
+    $('fpId').value = ''; $('fpNombre').value = ''; $('fpUnidades').value = 1; $('fpPrecio').value = ''; $('fpActivo').checked = true;
+    $('fpTitulo').textContent = 'Agregar producto'; $('fpBtn').textContent = 'Agregar'; $('fpCancelar').style.display = 'none';
+  }
+  function editarProd(id){
+    const p = listaProd.find(x => x.id === id); if (!p) return;
+    $('fpId').value = p.id; $('fpNombre').value = p.nombre; $('fpUnidades').value = p.unidades;
+    $('fpPrecio').value = p.precio || ''; $('fpActivo').checked = p.activo;
+    $('fpTitulo').textContent = 'Editar: ' + p.nombre; $('fpBtn').textContent = 'Guardar cambios'; $('fpCancelar').style.display = '';
+    window.scrollTo(0, 0); $('fpNombre').focus();
+  }
+  async function guardarProd(){
+    const b = $('fpBtn'); b.disabled = true;
+    try {
+      const id = await run('cajaGuardarProducto', PIN, {
+        id: $('fpId').value, nombre: $('fpNombre').value, unidades: $('fpUnidades').value,
+        precio: $('fpPrecio').value, activo: $('fpActivo').checked,
+      });
+      aviso($('fpId').value ? 'Producto actualizado' : 'Producto agregado (' + id + '). Ya puedes subir su foto.');
+      limpiarForm(); await productos();
+    } catch(e){ aviso(e.message); }
+    b.disabled = false;
+  }
+  function elegirFoto(id){ prodFoto = id; $('archivo').value = ''; $('archivo').click(); }
+
+  function reducir(file, max = 1000){
+    return new Promise((ok, mal) => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        ok(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+      };
+      img.onerror = () => mal(new Error('No pude leer esa imagen. Prueba con JPG o PNG.'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function fotoElegida(input){
+    const f = input.files[0]; if (!f || !prodFoto) return;
+    if (prodFoto === '__banner__'){
+      const bb = $('bBanner'); bb.disabled = true; bb.textContent = 'Subiendo…';
+      try { pintarBanner(await run('cajaSubirBanner', PIN, await reducir(f, 2000), 'image/jpeg')); aviso('Imagen del encabezado guardada'); }
+      catch(e){ aviso(e.message); }
+      bb.disabled = false; bb.textContent = 'Subir imagen'; return;
+    }
+    const b = $('bf_' + prodFoto); if (b){ b.disabled = true; b.textContent = 'Subiendo…'; }
+    try {
+      const b64 = await reducir(f);
+      const url = await run('cajaSubirFoto', PIN, prodFoto, b64, 'image/jpeg');
+      const p = listaProd.find(x => x.id === prodFoto); if (p) p.foto = url + '&v=' + Date.now();
+      pintarProductos(); aviso('Foto guardada');
+    } catch(e){ aviso(e.message); pintarProductos(); }
+  }
+  async function quitarFoto(id){
+    if (!confirm('¿Quitar la foto de este producto?')) return;
+    try { await run('cajaQuitarFoto', PIN, id); const p = listaProd.find(x => x.id === id); if (p) p.foto = ''; pintarProductos(); }
+    catch(e){ aviso(e.message); }
+  }
+
+  $('pin').focus();
+</script>
+</body>
+</html>
