@@ -24,7 +24,9 @@
   .btn.sec{background:#fff;color:var(--azul);border:1.5px solid var(--azul)}
   .btn.peq{padding:7px 11px;font-size:13px}
   .btn.mal{background:#fff;color:var(--mal);border:1.5px solid #f1b8b2}
-  .btn:disabled{opacity:.55;cursor:wait}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn.trabajando{cursor:wait}
+  .ventaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:#e6f4ee;color:var(--ok);font-weight:700;font-size:15px}
   .buscador{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .buscador input{flex:1;min-width:220px}
   .lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
@@ -228,6 +230,15 @@
     </div>
   </div>
 </div>
+<div class="mvelo" id="cVelo" style="z-index:40">
+  <div class="modal" role="alertdialog" aria-labelledby="cTexto">
+    <div id="cTexto" style="font-size:17px;font-weight:700;white-space:pre-line;margin-bottom:16px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn sec" id="cNo" type="button">Cancelar</button>
+      <button class="btn" id="cSi" type="button">Aceptar</button>
+    </div>
+  </div>
+</div>
 <div class="mvelo" id="lVelo">
   <div class="modal" role="dialog" aria-labelledby="lTitulo">
     <h3 id="lTitulo" style="margin:0 0 4px">Producto libre</h3>
@@ -261,12 +272,24 @@
   let pedidos = [];
   let tActual = 'cobrar';
   let timer = null;
+  let cobrando = false;
   let prodFoto = null;
   const $ = id => document.getElementById(id);
   const dinero = n => '$' + Number(n).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const EST = {'Pendiente de pago':'p','Pagado':'g','Canjeado':'c','Cancelado':'x'};
 
+  // Confirmación dentro de la página (no usa la ventanita del navegador, que algunas computadoras bloquean).
+  function confirmar(texto){
+    return new Promise(res => {
+      const v = $('cVelo'); $('cTexto').textContent = texto; v.classList.add('ab');
+      const tecla = e => { if (e.key === 'Escape') fin(false); else if (e.key === 'Enter') { e.preventDefault(); fin(true); } };
+      const fin = ok => { v.classList.remove('ab'); $('cSi').onclick = $('cNo').onclick = null; document.removeEventListener('keydown', tecla); res(ok); };
+      $('cSi').onclick = () => fin(true); $('cNo').onclick = () => fin(false);
+      document.addEventListener('keydown', tecla);
+      setTimeout(() => $('cSi').focus(), 30);
+    });
+  }
   function aviso(t){ const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(m._t); m._t = setTimeout(() => m.style.display = 'none', 3500); }
   function run(fn, ...args){
     return fetch(API, {
@@ -353,9 +376,9 @@
   }
 
   async function estado(folio, nuevo, silencioso){
-    if (!silencioso && nuevo === 'Cancelado' && !confirm('¿Cancelar el pedido ' + folio + '?')) return null;
-    if (!silencioso && nuevo === 'Pendiente de pago' && !confirm('¿Regresar ' + folio + ' a "Pendiente de pago"? Si estaba cobrado, quedará registrada la anulación del cobro.')) return null;
-    if (!silencioso && nuevo === 'Canjeado' && !confirm('¿Entregar los productos del pedido ' + folio + '?')) return null;
+    if (!silencioso && nuevo === 'Cancelado' && !(await confirmar('¿Cancelar el pedido ' + folio + '?'))) return null;
+    if (!silencioso && nuevo === 'Pendiente de pago' && !(await confirmar('¿Regresar ' + folio + ' a "Pendiente de pago"? Si estaba cobrado, quedará registrada la anulación del cobro.'))) return null;
+    if (!silencioso && nuevo === 'Canjeado' && !(await confirmar('¿Entregar los productos del pedido ' + folio + '?'))) return null;
     try {
       const p = await run('cajaCambiarEstado', PIN, folio, nuevo);
       const i = pedidos.findIndex(x => x.folio === folio);
@@ -413,7 +436,7 @@
 
   async function cobrar(folio){
     const p = pedidos.find(x => x.folio === folio);
-    if (!confirm('Cobrar ' + dinero(p.total) + ' a ' + p.tutor + ' (folio ' + folio + ')?\n\nUna vez cobrado ya no se puede modificar.')) return;
+    if (!(await confirmar('Cobrar ' + dinero(p.total) + ' a ' + p.tutor + ' (folio ' + folio + ')?\n\nUna vez cobrado ya no se puede modificar.'))) return;
     await estado(folio, 'Pagado', true);
   }
 
@@ -505,7 +528,7 @@
     const t = posTotal();
     $('posTotal').textContent = dinero(t);
     $('posCobrar').disabled = !t;
-    $('posCobrar').textContent = t ? 'Cobrar ' + dinero(t) : 'Cobrar';
+    $('posCobrar').textContent = t ? 'Cobrar ' + dinero(t) : 'Toca productos para cobrar';
     const rec = Number($('posRecibido').value);
     $('posCambio').innerHTML = rec && t ? (rec >= t ? 'Cambio: <b>' + dinero(rec - t) + '</b>' : '<span style="color:var(--mal)">Faltan ' + dinero(t - rec) + '</span>') : '';
   }
@@ -516,19 +539,20 @@
   }
   function limpiarVenta(){ posCarrito = {}; posLibres = {}; $('posRecibido').value = ''; pintarVenta(); }
   async function cobrarVenta(){
-    const t = posTotal(); if (!t) return;
-    if (!confirm('Cobrar ' + dinero(t) + ' (venta directa)?\n\nUna vez cobrado ya no se puede modificar.')) return;
-    const b = $('posCobrar'); b.disabled = true; b.textContent = 'Registrando…';
+    const t = posTotal(); if (!t || cobrando) return;
+    cobrando = true;
+    const b = $('posCobrar'); b.disabled = true; b.classList.add('trabajando'); b.textContent = 'Registrando…';
     try {
       const r = await run('cajaVentaDirecta', PIN, itemsVenta().map(x => x.libre
         ? { libre: true, nombre: x.nombre, precio: x.precio, cantidad: x.cant }
         : { id: x.key, cantidad: x.cant }));
       ultimaVenta = r;
-      $('posUltima').innerHTML = 'Última venta: <b>' + esc(r.folio) + '</b> · ' + dinero(r.total) +
-        ' <button class="btn mal peq" style="margin-left:6px" onclick="cancelarUltima()">Cancelar esta venta</button>';
-      aviso('Venta ' + r.folio + ' registrada');
+      $('posUltima').innerHTML = '<div class="ventaok">✓ Cobrado ' + dinero(r.total) + ' · ' + esc(r.folio) + '. Lista para la siguiente venta.</div>' +
+        '<div style="margin-top:6px"><button class="btn mal peq" onclick="cancelarUltima()">Cancelar esta venta</button></div>';
       limpiarVenta();
+      if ($('posBuscar')) { $('posBuscar').value = ''; pintarVenta(); }
     } catch(e){ aviso(e.message); pintarVenta(); }
+    finally { cobrando = false; b.classList.remove('trabajando'); }
   }
 
   /* ---------- RESUMEN ---------- */
@@ -573,7 +597,7 @@
     d.textContent = url ? '' : 'Sin imagen';
   }
   async function quitarBanner(){
-    if (!confirm('¿Quitar la imagen del encabezado?')) return;
+    if (!(await confirmar('¿Quitar la imagen del encabezado?'))) return;
     try { await run('cajaQuitarBanner', PIN); pintarBanner(''); aviso('Imagen quitada'); } catch(e){ aviso(e.message); }
   }
   function pintarProductos(){
@@ -643,7 +667,7 @@
     } catch(e){ aviso(e.message); pintarProductos(); }
   }
   async function quitarFoto(id){
-    if (!confirm('¿Quitar la foto de este producto?')) return;
+    if (!(await confirmar('¿Quitar la foto de este producto?'))) return;
     try { await run('cajaQuitarFoto', PIN, id); const p = listaProd.find(x => x.id === id); if (p) p.foto = ''; pintarProductos(); }
     catch(e){ aviso(e.message); }
   }
