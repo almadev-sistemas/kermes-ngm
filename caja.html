@@ -26,6 +26,12 @@
   .btn.mal{background:#fff;color:var(--mal);border:1.5px solid #f1b8b2}
   .btn:disabled{opacity:.55;cursor:default}
   .btn.trabajando{cursor:wait}
+  .tk{color:#1f2937;margin-top:12px;border:1.5px dashed #b7c4d6;border-radius:12px;padding:12px 14px;background:#fbfcfe}
+  .tk .cab{display:flex;justify-content:space-between;align-items:baseline;font-weight:800;color:var(--ok);margin-bottom:6px}
+  .tk .cab small{color:var(--gris);font-weight:600}
+  .tk .ln{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:2px 0}
+  .tk .tt{display:flex;justify-content:space-between;font-weight:800;font-size:16px;border-top:1px solid var(--linea);margin-top:6px;padding-top:6px}
+  .tk .cb{display:flex;justify-content:space-between;font-size:14px;color:var(--gris)}
   .ventaok{margin-top:10px;padding:10px 12px;border-radius:10px;background:#e6f4ee;color:var(--ok);font-weight:700;font-size:15px}
   .buscador{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .buscador input{flex:1;min-width:220px}
@@ -545,10 +551,16 @@
     try {
       const r = await run('cajaVentaDirecta', PIN, itemsVenta().map(x => x.libre
         ? { libre: true, nombre: x.nombre, precio: x.precio, cantidad: x.cant }
-        : { id: x.key, cantidad: x.cant }));
+        : { id: x.key, cantidad: x.cant }), Number($('posRecibido').value) || 0);
       ultimaVenta = r;
-      $('posUltima').innerHTML = '<div class="ventaok">✓ Cobrado ' + dinero(r.total) + ' · ' + esc(r.folio) + '. Lista para la siguiente venta.</div>' +
-        '<div style="margin-top:6px"><button class="btn mal peq" onclick="cancelarUltima()">Cancelar esta venta</button></div>';
+      const rec = Number($('posRecibido').value) || 0;
+      const hora = new Date().toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'});
+      $('posUltima').innerHTML = '<div class="tk">' +
+        '<div class="cab"><span>✓ Último ticket · ' + esc(r.folio) + '</span><small>' + hora + '</small></div>' +
+        (r.lineas || []).map(l => '<div class="ln"><span>' + l.cantidad + ' × ' + esc(l.nombre) + '</span><span>' + dinero(l.subtotal) + '</span></div>').join('') +
+        '<div class="tt"><span>Total</span><span>' + dinero(r.total) + '</span></div>' +
+        (rec >= r.total ? '<div class="cb"><span>Recibido</span><span>' + dinero(rec) + '</span></div><div class="cb"><span>Cambio</span><b style="color:var(--ink,#111)">' + dinero(rec - r.total) + '</b></div>' : '') +
+        '<div style="margin-top:10px"><button class="btn mal peq" onclick="cancelarUltima()">Cancelar esta venta</button></div></div>';
       limpiarVenta();
       if ($('posBuscar')) { $('posBuscar').value = ''; pintarVenta(); }
     } catch(e){ aviso(e.message); pintarVenta(); }
