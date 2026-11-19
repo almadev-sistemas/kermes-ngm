@@ -146,6 +146,7 @@
       </select>
       <button class="btn sec" onclick="buscar()">Actualizar</button>
     </div>
+    <div id="cobUltimo" style="max-width:440px"></div>
     <div class="lista" id="lista"></div>
   </div>
 
@@ -233,6 +234,20 @@
     <div style="display:flex;gap:8px">
       <button class="btn sec" style="flex:1" onclick="cerrarMotivo(null)">No cancelar</button>
       <button class="btn mal" style="flex:1;background:var(--mal);color:#fff;border:0" onclick="confirmarMotivo()">Sí, cancelar cobro</button>
+    </div>
+  </div>
+</div>
+<div class="mvelo" id="kVelo">
+  <div class="modal" role="dialog" aria-labelledby="kTitulo">
+    <h3 id="kTitulo" style="margin:0 0 2px">Cobrar pedido</h3>
+    <div id="kQuien" style="font-size:14px;color:var(--gris);margin-bottom:10px"></div>
+    <div id="kLineas" class="tk" style="margin-top:0"></div>
+    <label for="kRecibido" style="display:block;font-size:13px;font-weight:700;color:#374151;margin-top:12px">Recibido (opcional, para calcular cambio)</label>
+    <input id="kRecibido" type="number" inputmode="decimal" min="0" step="any" style="width:100%;margin:4px 0 6px;font-size:18px" oninput="kCambio()" onkeydown="if(event.key==='Enter')kCobrar()">
+    <div id="kCambio" style="min-height:1.4em;font-size:15px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn sec" type="button" onclick="kCerrar()">Cancelar</button>
+      <button class="btn ok" type="button" id="kBtn" onclick="kCobrar()">Cobrar</button>
     </div>
   </div>
 </div>
@@ -440,10 +455,49 @@
     } catch(e){ aviso(e.message); return null; }
   }
 
-  async function cobrar(folio){
-    const p = pedidos.find(x => x.folio === folio);
-    if (!(await confirmar('Cobrar ' + dinero(p.total) + ' a ' + p.tutor + ' (folio ' + folio + ')?\n\nUna vez cobrado ya no se puede modificar.'))) return;
-    await estado(folio, 'Pagado', true);
+  let kFolio = null, kOcupado = false;
+  function lineasTicket(items, total){
+    return items.map(i => '<div class="ln"><span>' + i.cantidad + ' × ' + esc(i.nombre) + '</span><span>' + dinero(i.subtotal) + '</span></div>').join('') +
+      '<div class="tt"><span>Total</span><span>' + dinero(total) + '</span></div>';
+  }
+  function cobrar(folio){
+    const p = pedidos.find(x => x.folio === folio); if (!p) return;
+    kFolio = folio;
+    $('kTitulo').textContent = 'Cobrar ' + folio;
+    $('kQuien').innerHTML = esc(p.tutor) + (p.alumno ? ' · Alumno: ' + esc(p.alumno) + (p.grupo ? ' (' + esc(p.grupo) + ')' : '') : '');
+    $('kLineas').innerHTML = lineasTicket(p.items, p.total);
+    $('kRecibido').value = ''; kCambio();
+    $('kBtn').disabled = false;
+    $('kVelo').classList.add('ab');
+    setTimeout(() => $('kRecibido').focus(), 50);
+  }
+  function kCerrar(){ if (!kOcupado) { $('kVelo').classList.remove('ab'); kFolio = null; } }
+  function kCambio(){
+    const p = pedidos.find(x => x.folio === kFolio); if (!p) return;
+    const rec = Number($('kRecibido').value);
+    $('kCambio').innerHTML = rec ? (rec >= p.total ? 'Cambio: <b style="font-size:18px">' + dinero(rec - p.total) + '</b>' : '<span style="color:var(--mal)">Faltan ' + dinero(p.total - rec) + '</span>') : '';
+    $('kBtn').textContent = 'Cobrar ' + dinero(p.total);
+  }
+  async function kCobrar(){
+    if (kOcupado || !kFolio) return;
+    const folio = kFolio, p = pedidos.find(x => x.folio === folio);
+    const rec = Number($('kRecibido').value) || 0;
+    if (rec && rec < p.total) { $('kRecibido').focus(); return; }
+    kOcupado = true; const b = $('kBtn'); b.disabled = true; b.classList.add('trabajando'); b.textContent = 'Registrando…';
+    try {
+      const np = await run('cajaCambiarEstado', PIN, folio, 'Pagado', rec);
+      const i = pedidos.findIndex(x => x.folio === folio); if (i >= 0) pedidos[i] = np;
+      pintarLista();
+      const hora = new Date().toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'});
+      $('cobUltimo').innerHTML = '<div class="tk" style="margin:0 0 14px">' +
+        '<div class="cab"><span>✓ Último cobro · ' + esc(folio) + '</span><small>' + hora + '</small></div>' +
+        '<div style="font-size:14px;margin-bottom:6px">' + esc(np.tutor) + (np.alumno ? ' · ' + esc(np.alumno) : '') + '</div>' +
+        lineasTicket(np.items, np.total) +
+        (rec ? '<div class="cb"><span>Recibido</span><span>' + dinero(rec) + '</span></div><div class="cb"><span>Cambio</span><b style="color:#1f2937">' + dinero(rec - np.total) + '</b></div>' : '') +
+        '<div style="margin-top:10px"><button class="btn peq" onclick="imprimir(\'' + esc(folio) + '\')">🖨️ Imprimir ticket</button></div></div>';
+      kOcupado = false; kCerrar();
+    } catch(e){ aviso(e.message); b.disabled = false; b.textContent = 'Cobrar ' + dinero(p.total); }
+    finally { kOcupado = false; b.classList.remove('trabajando'); }
   }
 
   function imprimir(folio){
