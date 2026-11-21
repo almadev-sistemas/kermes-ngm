@@ -88,6 +88,8 @@
   th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--linea);font-size:14px}
   th{background:#eef2f7;font-size:13px;color:#374151}
   td.n,th.n{text-align:right}
+  #tablaProd{overflow-x:auto}
+  #tablaProd tfoot th,#tablaProd tfoot td{background:#eef2f7;font-weight:700;border-top:2px solid var(--linea)}
   .prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
   .prod{background:#fff;border:1px solid var(--linea);border-radius:14px;overflow:hidden}
   .prod .ph{aspect-ratio:4/3;background:#eef0f3;position:relative;display:grid;place-items:center;color:#a0a8b5;font-size:13px}
@@ -340,12 +342,14 @@
     b.disabled = false;
   }
   function salir(){
+    detenerResumen();
     PIN = ''; $('pin').value = ''; $('hdr').style.display = 'none';
     ['vCobrar','vResumen','vProductos','vVenta'].forEach(id => $(id).style.display = 'none');
     $('vLogin').style.display = 'block'; $('pin').focus();
   }
 
   function tab(t){
+    detenerResumen();
     tActual = t;
     document.querySelectorAll('.tab[data-t]').forEach(b => b.classList.toggle('act', b.dataset.t === t));
     $('vCobrar').style.display = t === 'cobrar' ? 'block' : 'none';
@@ -622,10 +626,33 @@
   }
 
   /* ---------- RESUMEN ---------- */
-  async function resumen(){
-    $('tiles').innerHTML = '<div class="vacio">Cargando…</div>'; $('tablaProd').innerHTML = '';
+  let versionResumen = 0;
+  let timerResumen;
+
+  function detenerResumen(){
+    clearTimeout(timerResumen);
+    versionResumen++;
+  }
+
+  async function resumen(actualizar = false){
+    const version = versionResumen;
+    if (!actualizar) {
+      $('tiles').innerHTML = '<div class="vacio">Cargando…</div>';
+      $('tablaProd').innerHTML = '';
+    }
     try {
+      if (actualizar && document.hidden) return;
       const r = await run('cajaResumen', PIN);
+      if (version !== versionResumen) return;
+
+      // Conserva los importes que la persona abrió mientras consulta el resumen.
+      const abiertos = new Set();
+      if (actualizar) {
+        document.querySelectorAll('#vResumen .tile').forEach(t => {
+          const importe = t.querySelector('.din');
+          if (importe.textContent === importe.dataset.v) abiertos.add(t.querySelector('small').textContent);
+        });
+      }
       const tile = (titulo, valor, sub) =>
         '<div class="tile" onclick="const d=this.querySelector(\'.din\');d.textContent=d.dataset.v===d.textContent?\'Toca para ver importe\':d.dataset.v">' +
         '<small>' + titulo + '</small><b class="din" data-v="' + valor + '" style="font-size:22px">Toca para ver importe</b>' + (sub ? '<div class="din2">' + sub + '</div>' : '') + '</div>';
@@ -644,11 +671,48 @@
         '<div class="tile" onclick="const d=this.querySelector(\'.din\');d.textContent=d.dataset.v===d.textContent?\'Toca para ver importe\':d.dataset.v">' +
         '<small>' + esc(k) + '</small><b>' + r.porEstado[k].pedidos + '</b>' +
         '<div class="din" data-v="' + dinero(r.porEstado[k].dinero) + '">Toca para ver importe</div></div>').join('');
-      $('tablaProd').innerHTML = r.porProducto.length
-        ? '<table><tr><th>Producto</th><th class="n">Órdenes</th><th class="n">Piezas</th><th class="n">Órdenes pagadas</th><th class="n">Vendidas en mostrador</th><th class="n">Cobrado</th></tr>' +
-          r.porProducto.map(x => '<tr><td>' + esc(x.nombre) + '</td><td class="n">' + x.ordenes + '</td><td class="n">' + x.piezas + '</td><td class="n">' + x.ordenesPagadas + '</td><td class="n">' + (x.ventaDirecta || 0) + '</td><td class="n">' + dinero(x.dineroCobrado || 0) + '</td></tr>').join('') + '</table>'
-        : '<div class="vacio">Aún no hay pedidos.</div>';
-    } catch(e){ aviso(e.message); }
+      if (abiertos.size) {
+        document.querySelectorAll('#vResumen .tile').forEach(t => {
+          if (abiertos.has(t.querySelector('small').textContent)) {
+            const importe = t.querySelector('.din');
+            importe.textContent = importe.dataset.v;
+          }
+        });
+      }
+
+      const productos = r.porProducto.slice().sort((a, b) =>
+        b.ordenesPagadas - a.ordenesPagadas || a.nombre.localeCompare(b.nombre, 'es-MX'));
+      const totalPedidos = productos.reduce((suma, p) => suma + p.dinero, 0);
+      const totalCobrado = productos.reduce((suma, p) => suma + (p.dineroCobrado || 0), 0);
+
+      const filas = productos.map(p => `
+        <tr>
+          <td>${esc(p.nombre)}</td>
+          <td class="n">${p.ordenes}</td>
+          <td class="n">${p.piezas}</td>
+          <td class="n">${p.ordenesPagadas}</td>
+          <td class="n">${p.ventaDirecta || 0}</td>
+          <td class="n">${dinero(p.dineroCobrado || 0)}</td>
+          <td class="n">${dinero(p.dinero)}</td>
+        </tr>`).join('');
+      $('tablaProd').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Producto</th><th class="n">Órdenes</th><th class="n">Piezas</th>
+            <th class="n" aria-sort="descending">Órdenes pagadas ↓</th>
+            <th class="n">Vendidas en mostrador</th><th class="n">Cobrado</th><th class="n">Importe de pedidos</th>
+          </tr></thead>
+          <tbody>${filas || '<tr><td colspan="7" class="vacio">Aún no hay pedidos.</td></tr>'}</tbody>
+          <tfoot><tr>
+            <th scope="row" colspan="5">Total de todos los pedidos</th>
+            <td class="n">${dinero(totalCobrado)}</td><td class="n">${dinero(totalPedidos)}</td>
+          </tr></tfoot>
+        </table>`;
+    } catch(e){
+      if (version === versionResumen) aviso(e.message);
+    } finally {
+      if (version === versionResumen) timerResumen = setTimeout(() => resumen(true), 60000);
+    }
   }
 
   /* ---------- PRODUCTOS Y FOTOS ---------- */
