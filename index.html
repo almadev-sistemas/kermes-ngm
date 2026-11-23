@@ -91,6 +91,10 @@
   .conf{max-width:520px;margin:0 auto;background:#fff;border:1px solid var(--linea);border-radius:20px;padding:26px 22px;text-align:center}
   .conf .ok{width:58px;height:58px;border-radius:50%;background:#e6f4ee;color:var(--ok);display:grid;place-items:center;font-size:30px;margin:0 auto 10px}
   .folio{font-size:44px;font-weight:900;letter-spacing:2px;color:var(--azul);margin:6px 0}
+  .lugar{border-radius:14px;padding:14px 16px;margin:14px 0;font-size:16px;line-height:1.45;text-align:center}
+  .lugar b{display:block;font-size:19px;margin-bottom:2px}
+  .lugar.esp{background:#e6f4ee;color:#14532d;border:2px solid #1f8a5b}
+  .lugar.gen{background:#fff4e0;color:#7c4a03;border:2px solid #b7791f}
   .pasos{text-align:left;background:var(--crema);border-radius:14px;padding:14px 16px;margin:16px 0;line-height:1.5;font-size:15px}
   /* Celular: dos columnas compactas para que todo se vea y se pueda tocar */
   @media(max-width:600px){
@@ -213,6 +217,29 @@
   const carrito = {}; // id -> cantidad
   const MAX = 50;
   const $ = id => document.getElementById(id);
+
+  /* ---------- Corte para preparar pedidos ----------
+     Pagados ANTES del corte  → Entrega especial (segunda planta).
+     Pedidos hechos o pagados DESPUÉS del corte → pagar y recoger en la fila general (Caja general). */
+  const CORTE = new Date('2026-11-23T12:00:00-06:00');
+  const CORTE_TEXTO = 'hoy lunes 23 a las 12:00 p.m.';
+  const pasoCorte = () => Date.now() >= CORTE.getTime();
+  // Lee fechas como "23/11/2026 10:15" o "2026-11-23 10:15". Si no se entiende, regresa null.
+  function leerFecha(t){
+    t = String(t || '').trim(); let m;
+    if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ ,T]+(\d{1,2}):(\d{2}))?/)))
+      return new Date(+m[3], m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0));
+    if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2}))?/)))
+      return new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0));
+    const d = new Date(t); return isNaN(d) ? null : d;
+  }
+  function pagadoAntesDelCorte(fechaPago){
+    const d = leerFecha(fechaPago);
+    return d ? d.getTime() < CORTE.getTime() : true;
+  }
+  const AVISO_ESPECIAL = '<div class="lugar esp"><b>📦 Entrega especial · Segunda planta</b>Tu pedido ya está pagado. Ve a la sección de <b style="display:inline;font-size:inherit">Entrega especial</b> en la segunda planta y presenta tu folio o ticket.</div>';
+  const AVISO_GENERAL = '<div class="lugar gen"><b>🧾 Fila general · Caja general</b>Este pedido se paga y se recoge en la <b style="display:inline;font-size:inherit">fila general</b>, en la Caja general de la kermés. Presenta tu folio.</div>';
+  const AVISO_ANTES = '<div class="lugar gen"><b>⏰ Paga antes de ' + CORTE_TEXTO + '</b>Si pagas en Caja antes de esa hora, recoges en la sección de Entrega especial (segunda planta). Después, se paga y recoge en la fila general.</div>';
   const dinero = n => '$' + Number(n).toLocaleString('es-MX', {minimumFractionDigits: 0, maximumFractionDigits: 2});
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -337,13 +364,15 @@
     v.style.display = 'block';
     v.innerHTML =
       '<div class="conf"><div class="ok">✓</div><div>¡Gracias, ' + esc(r.tutor.split(' ')[0]) + '! Tu pedido quedó registrado.</div>' +
-      '<div class="cintilla" role="note">Tu pedido será válido hasta que realices tu pago en Caja.</div>' +
+      (pasoCorte() ? AVISO_GENERAL : '<div class="cintilla" role="note">Tu pedido será válido hasta que realices tu pago en Caja.</div>' + AVISO_ANTES) +
       '<div style="margin-top:14px;color:var(--gris);font-size:14px">Tu folio es</div><div class="folio">' + esc(r.folio) + '</div>' +
       '<div style="font-size:14px;color:var(--gris)">Alumno: ' + esc(r.alumno) + '</div>' +
       '<div style="margin-top:14px;text-align:left">' + r.lineas.map(l =>
         '<div class="lin"><span>' + l.cantidad + ' × ' + esc(l.nombre) + '</span><b>' + dinero(l.subtotal) + '</b></div>').join('') +
       '<div class="total"><span>Total</span><span>' + dinero(r.total) + '</span></div></div>' +
-      '<div class="pasos"><b>¿Qué sigue?</b><br>1. Toma captura de esta pantalla.<br>2. Pasa a <b>Caja</b> con tu folio y paga ' + dinero(r.total) + '.<br>3. Te entregan tu ticket; preséntalo en la kermés para recoger tus productos.</div>' +
+      (pasoCorte()
+        ? '<div class="pasos"><b>¿Qué sigue?</b><br>1. Toma captura de esta pantalla.<br>2. El día de la kermés, forma la <b>fila general</b> y paga ' + dinero(r.total) + ' en la <b>Caja general</b> con tu folio.<br>3. Ahí mismo recibes tus productos.</div>'
+        : '<div class="pasos"><b>¿Qué sigue?</b><br>1. Toma captura de esta pantalla.<br>2. Pasa a <b>Caja</b> con tu folio y paga ' + dinero(r.total) + ' antes de ' + CORTE_TEXTO + '<br>3. Te entregan tu ticket; preséntalo en la kermés en la <b>Entrega especial (segunda planta)</b> para recoger tus productos.</div>') +
       '<button class="btn sec" onclick="nuevoPedido()">Hacer otro pedido</button></div>';
     window.scrollTo(0, 0);
   }
@@ -388,12 +417,17 @@
   }
   function mostrarConsulta(p){
     const clase = { 'Pendiente de pago': 'p', 'Pagado': 'g', 'Canjeado': 'c', 'Cancelado': 'x' }[p.estado] || 'x';
-    const texto = { 'Pendiente de pago': 'Pendiente de pago', 'Pagado': 'Pagado · recoge tus productos en la kermés', 'Canjeado': 'Entregado', 'Cancelado': 'Cancelado' }[p.estado] || p.estado;
+    const especial = p.estado === 'Pagado' && pagadoAntesDelCorte(p.fechaPago);
+    const texto = { 'Pendiente de pago': 'Pendiente de pago', 'Pagado': especial ? 'Pagado · Entrega especial (segunda planta)' : 'Pagado · recoge en la fila general', 'Canjeado': 'Entregado', 'Cancelado': 'Cancelado' }[p.estado] || p.estado;
+    let lugar = '';
+    if (p.estado === 'Pagado') lugar = especial ? AVISO_ESPECIAL : AVISO_GENERAL;
+    else if (p.estado === 'Pendiente de pago') lugar = pasoCorte() ? AVISO_GENERAL : AVISO_ANTES;
     $('cResultado').innerHTML =
       '<div class="conf" style="margin-top:18px;text-align:left">' +
       '<div style="text-align:center"><div style="color:var(--gris);font-size:14px">Folio</div><div class="folio">' + esc(p.folio) + '</div>' +
       '<span class="estado ' + clase + '">' + esc(texto) + '</span></div>' +
-      (p.estado === 'Pendiente de pago' ? '<div class="cintilla" role="note">Tu pedido será válido hasta que realices tu pago en Caja.</div>' : '') +
+      (p.estado === 'Pendiente de pago' && !pasoCorte() ? '<div class="cintilla" role="note">Tu pedido será válido hasta que realices tu pago en Caja.</div>' : '') +
+      lugar +
       '<div style="margin-top:12px;font-size:14px;color:var(--gris)">' + esc(p.tutor) + (p.alumno ? ' · Alumno: ' + esc(p.alumno) : '') + '</div>' +
       '<div style="margin-top:10px">' + p.lineas.map(l =>
         '<div class="lin"><span>' + l.cantidad + ' × ' + esc(l.nombre) + '</span><b>' + dinero(l.subtotal) + '</b></div>').join('') +
