@@ -133,9 +133,12 @@
   <div id="vLogin" class="login">
     <h2 style="margin-top:0">Caja · Pedidos</h2>
     <p style="color:var(--gris);font-size:14px">Escribe el PIN de Caja</p>
-    <input id="pin" type="password" inputmode="text" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px" onkeydown="if(event.key==='Enter')entrar()">
+    <input id="pin" type="password" inputmode="text" autocomplete="current-password" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px" onkeydown="if(event.key==='Enter')entrar(false)">
+    <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font-size:14px;color:var(--gris);cursor:pointer">
+      <input type="checkbox" id="recordar" checked> Recordar en este equipo
+    </label>
     <div style="color:var(--mal);font-size:14px;min-height:1.2em;margin:8px 0" id="errPin"></div>
-    <button class="btn" style="width:100%" id="btnPin" onclick="entrar()">Entrar</button>
+    <button class="btn" style="width:100%" id="btnPin" onclick="entrar(false)">Entrar</button>
   </div>
 
   <div id="vCobrar" style="display:none">
@@ -325,12 +328,18 @@
       .then(res => { if (!res.ok) throw new Error(res.error || 'Ocurrió un error.'); return res.data; });
   }
 
-  async function entrar(){
+  // PIN recordado en este equipo (se borra al tocar "Salir").
+  const CLAVE_PIN = 'kermesCajaPin';
+  function pinGuardado(){ try { return localStorage.getItem(CLAVE_PIN) || ''; } catch(e){ return ''; } }
+  function guardarPin(v){ try { if (v) localStorage.setItem(CLAVE_PIN, v); else localStorage.removeItem(CLAVE_PIN); } catch(e){} }
+
+  async function entrar(auto){
     const b = $('btnPin'); b.disabled = true; $('errPin').textContent = '';
     try {
-      const pin = $('pin').value;
+      const pin = auto ? pinGuardado() : $('pin').value;
       const r = await run('cajaEntrar', pin);
       PIN = pin;
+      if (!auto) guardarPin($('recordar').checked ? pin : '');
       ROL = r.rol || 'caja';
       USUARIO = r.usuario || '';
       $('titulo').textContent = (r.usuario || (ROL === 'admin' ? 'Administración' : 'Caja')) + ' · ' + r.evento;
@@ -338,10 +347,14 @@
       document.querySelector('.tab[data-t="productos"]').style.display = ROL === 'admin' ? '' : 'none';
       $('vLogin').style.display = 'none'; $('hdr').style.display = 'flex';
       tab(/^Caja \d+$/.test(USUARIO) ? 'venta' : 'cobrar'); // Caja 1, 2…: día de la kermés; Caja del colegio: pedidos
-    } catch(e){ $('errPin').textContent = e.message; }
+    } catch(e){
+      if (auto && !/conexión/i.test(e.message)) guardarPin(''); // el PIN cambió en la hoja: pedirlo de nuevo
+      $('errPin').textContent = auto ? (/conexión/i.test(e.message) ? e.message : '') : e.message;
+    }
     b.disabled = false;
   }
   function salir(){
+    guardarPin('');
     detenerResumen();
     PIN = ''; $('pin').value = ''; $('hdr').style.display = 'none';
     ['vCobrar','vResumen','vProductos','vVenta'].forEach(id => $(id).style.display = 'none');
@@ -802,7 +815,7 @@
     catch(e){ aviso(e.message); }
   }
 
-  $('pin').focus();
+  if (pinGuardado()) entrar(true); else $('pin').focus();
 </script>
 </body>
 </html>
