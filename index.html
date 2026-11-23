@@ -257,11 +257,17 @@
       pre.src = DATA.banner;
     }
     const f = [];
-    if (DATA.cierreTexto) f.push('⏰ Pedidos hasta el ' + DATA.cierreTexto);
-    f.push('🎟️ Paga en Caja y recoge tu ticket');
+    if (pasoCorte()) {
+      f.push('🧾 Pedidos abiertos: se pagan y recogen en la fila general');
+    } else {
+      f.push('⏰ Paga en Caja antes de ' + CORTE_TEXTO);
+      f.push('📦 Pagados a tiempo: Entrega especial, 2ª planta');
+    }
     if (DATA.fechaKermes) f.push('🎉 Kermés: ' + DATA.fechaKermes);
     $('fechas').innerHTML = f.map(t => '<span class="chip">' + esc(t) + '</span>').join('');
-    $('avisoTicket').textContent = 'Paga en Caja y recoge tu ticket para canjearlo en la kermés.';
+    $('avisoTicket').textContent = pasoCorte()
+      ? 'Tu pedido se paga y se recoge en la fila general (Caja general) de la kermés.'
+      : 'Si pagas en Caja antes de ' + CORTE_TEXTO + ', recoges en la Entrega especial (segunda planta). Después, se paga y recoge en la fila general.';
   }
 
   function render(){
