@@ -122,9 +122,10 @@
   .ghor .f .t{height:18px;background:#eef2f7;border-radius:0 4px 4px 0;overflow:hidden}
   .ghor .f .t i{display:block;height:100%;background:var(--azul2);border-radius:0 4px 4px 0}
   .ghor .f .c{font-weight:700;min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
-  .gdos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .gdos{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
   @media(max-width:800px){.gdos{grid-template-columns:1fr}}
   @media(max-width:600px){.gcols,.gejes{gap:2px}.gcol,.gejes div{min-width:0}.gejes div{font-size:9px}.gcol .b{width:85%}.gcol .v{font-size:10px}}
+  .gsec.oculta .ghor .c{color:transparent;text-shadow:0 0 9px rgba(0,0,0,.45);user-select:none}
   .gaviso{background:#fff4e0;color:#7c4a03;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
   details.gtab{margin-top:12px;font-size:13px} details.gtab summary{cursor:pointer;color:var(--azul2);font-weight:600}
   details.gtab table{margin-top:8px}
@@ -822,18 +823,21 @@
       const conFecha = peds.map(p => ({ p, d: leerFecha(p.fecha) })).filter(x => x.d);
       const totalHoja = Object.keys(r.porEstado).reduce((s, k) => s + (r.porEstado[k].pedidos || 0), 0);
       let html = '';
-      if (totalHoja > peds.length) html += '<div class="gaviso">Se analizaron ' + peds.length + ' de ' + totalHoja + ' pedidos (el sistema solo regresó esos). Las gráficas de horario y día pueden estar incompletas.</div>';
+      const ventas = todos.length - peds.length; // V-…: ventas directas en mostrador (no son pedidos de padres)
+      if (totalHoja > todos.length) html += '<div class="gaviso">Se analizaron ' + todos.length + ' de ' + totalHoja + ' registros (el sistema solo regresó esos). Las gráficas de horario y día pueden estar incompletas.</div>';
       if (conFecha.length < peds.length) html += '<div class="gaviso">' + (peds.length - conFecha.length) + ' pedidos no tienen una fecha que se pueda leer y no aparecen en las gráficas de horario y día.</div>';
 
       // Indicadores
       const vivos = peds.filter(p => p.estado !== 'Cancelado');
       const promedio = vivos.length ? vivos.reduce((s, p) => s + Number(p.total || 0), 0) / vivos.length : 0;
       const kpi = (t, v, sub) => '<div class="tile" style="cursor:default"><small>' + t + '</small><b>' + v + '</b>' + (sub ? '<div class="din2">' + sub + '</div>' : '') + '</div>';
+      const kpi$ = (t, v, sub) => '<div class="tile" onclick="const d=this.querySelector(\'.din\');d.textContent=d.dataset.v===d.textContent?\'👁 Ver importe\':d.dataset.v">' +
+        '<small>' + t + '</small><b class="din" data-v="' + v + '" style="font-size:20px;color:var(--tinta)">👁 Ver importe</b>' + (sub ? '<div class="din2">' + sub + '</div>' : '') + '</div>';
       html += '<div class="tiles">' +
-        kpi('🧾 Pedidos de padres', peds.length, vivos.length + ' sin contar cancelados') +
-        kpi('💰 Total cobrado', dinero(r.ingresos.cobrado), r.ingresos.movimientos + ' movimientos') +
-        kpi('⏳ Por cobrar', dinero(r.ingresos.porCobrar), (r.porEstado['Pendiente de pago'] || {pedidos: 0}).pedidos + ' pedidos sin pagar') +
-        kpi('🎟️ Pedido promedio', dinero(promedio), 'sin cancelados') + '</div>';
+        kpi('🧾 Pedidos de padres', peds.length, vivos.length + ' sin contar cancelados' + (ventas > 0 ? ' · aparte ' + ventas + ' ventas en mostrador' : '')) +
+        kpi$('💰 Total cobrado', dinero(r.ingresos.cobrado), r.ingresos.movimientos + ' movimientos') +
+        kpi$('⏳ Por cobrar', dinero(r.ingresos.porCobrar), (r.porEstado['Pendiente de pago'] || {pedidos: 0}).pedidos + ' pedidos sin pagar') +
+        kpi$('🎟️ Pedido promedio', dinero(promedio), 'sin cancelados') + '</div>';
 
       // ⭐ Horario
       const porHora = new Array(24).fill(0);
@@ -876,7 +880,7 @@
           '<div class="gsub">Número de pedidos por día.</div>' +
           '<span class="pico">Día con más pedidos: ' + dp.tip + ' (' + dp.v + ' pedidos)</span>' +
           columnas(datosD, 'pedidos') +
-          tablaDatos(['Día', 'Pedidos', 'Importe (sin cancelados)'], datosD.map(d => [d.tip, d.v, dinero(d.dinero)])) + '</div>';
+          tablaDatos(['Día', 'Pedidos'], datosD.map(d => [d.tip, d.v])) + '</div>';
       }
 
       // Estado y productos
@@ -884,12 +888,15 @@
       const prods = r.porProducto.slice().sort((a, b) => b.piezas - a.piezas).slice(0, 12);
       html += '<div class="gdos">' +
         '<div class="gsec"><h3>Pedidos por estado</h3><div class="gsub">Cuántos pedidos hay en cada etapa.</div>' + barras(est, v => String(v)) + '</div>' +
-        '<div class="gsec"><h3>Productos más pedidos</h3><div class="gsub">Piezas pedidas (sin cancelados).</div>' + barras(prods.map(p => ({ n: p.nombre, v: p.piezas })), v => String(v)) + '</div>' +
+        '<div class="gsec"><h3>Productos más pedidos</h3><div class="gsub">Piezas pedidas (sin cancelados).</div>' + barras(prods.map(p => ({ n: p.nombre, v: p.piezas })), v => String(v)) +
+        tablaDatos(['Producto', 'Piezas', 'Órdenes', 'En mostrador'],
+          r.porProducto.slice().sort((a, b) => b.piezas - a.piezas || a.nombre.localeCompare(b.nombre, 'es-MX'))
+            .map(p => [p.nombre, p.piezas, p.ordenes, p.ventaDirecta || 0])).replace('Ver tabla', 'Ver todos los productos') + '</div>' +
         '</div>';
 
       // Ingresos por día (cobros)
       if (r.ingresos.porDia.length){
-        html += '<div class="gsec"><h3>Dinero cobrado por día</h3><div class="gsub">Según la hoja Cobros.</div>' +
+        html += '<div class="gsec oculta" onclick="this.classList.toggle(\'oculta\')" style="cursor:pointer"><h3>Dinero cobrado por día</h3><div class="gsub">Según la hoja Cobros. Toca para mostrar u ocultar los importes.</div>' +
           barras(r.ingresos.porDia.map(d => ({ n: d.dia, v: d.dinero })), dinero) + '</div>';
       }
       $('gContenido').innerHTML = html || '<div class="vacio">Aún no hay pedidos.</div>';
