@@ -101,6 +101,33 @@
   .formprod b{width:100%;font-size:15px}
   .formprod #fpNombre{flex:1;min-width:180px}
   .nota{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px 14px;font-size:14px;color:#374151;margin-bottom:14px;line-height:1.45}
+  /* Gráficas */
+  .gsec{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .gsec.dest{border:2px solid var(--acento);box-shadow:0 4px 18px rgba(224,103,43,.12)}
+  .gsec h3{margin:0 0 2px;font-size:17px}
+  .gsec .gsub{color:var(--gris);font-size:13px;margin-bottom:14px}
+  .gsec .pico{display:inline-block;background:#fdeee6;color:#9a3f12;font-weight:700;font-size:13px;border-radius:999px;padding:4px 11px;margin-bottom:12px}
+  .gcols{display:flex;align-items:flex-end;gap:4px;height:220px;border-bottom:1px solid #c9d1dc;padding-top:22px;overflow-x:auto}
+  .gcol{flex:1 1 0;min-width:22px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;cursor:default}
+  .gcol .b{width:70%;max-width:46px;min-height:2px;background:var(--azul2);border-radius:4px 4px 0 0}
+  .gcol.top .b{background:var(--acento)}
+  .gcol .v{font-size:12px;font-weight:700;color:var(--tinta);margin-bottom:3px;visibility:hidden}
+  .gcol.top .v,.gcol:hover .v,.gcol.toc .v{visibility:visible}
+  .gcol:hover .b,.gcol.toc .b{filter:brightness(1.15)}
+  .gejes{display:flex;gap:4px;overflow-x:hidden}
+  .gejes div{flex:1 1 0;min-width:22px;text-align:center;font-size:11px;color:var(--gris);padding-top:5px;white-space:nowrap}
+  .ghor{display:flex;flex-direction:column;gap:6px}
+  .ghor .f{display:grid;grid-template-columns:minmax(110px,190px) 1fr auto;gap:10px;align-items:center;font-size:14px}
+  .ghor .f .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ghor .f .t{height:18px;background:#eef2f7;border-radius:0 4px 4px 0;overflow:hidden}
+  .ghor .f .t i{display:block;height:100%;background:var(--azul2);border-radius:0 4px 4px 0}
+  .ghor .f .c{font-weight:700;min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+  .gdos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:800px){.gdos{grid-template-columns:1fr}}
+  @media(max-width:600px){.gcols,.gejes{gap:2px}.gcol,.gejes div{min-width:0}.gejes div{font-size:9px}.gcol .b{width:85%}.gcol .v{font-size:10px}}
+  .gaviso{background:#fff4e0;color:#7c4a03;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+  details.gtab{margin-top:12px;font-size:13px} details.gtab summary{cursor:pointer;color:var(--azul2);font-weight:600}
+  details.gtab table{margin-top:8px}
   /* Ticket */
   #ticket{display:none}
   @media print{
@@ -124,6 +151,7 @@
     <button class="tab act" data-t="cobrar" onclick="tab('cobrar')">Cobrar pedidos</button>
     <button class="tab" data-t="venta" onclick="tab('venta')">Venta directa</button>
     <button class="tab" data-t="resumen" onclick="tab('resumen')">Resumen</button>
+    <button class="tab" data-t="graficas" onclick="tab('graficas')">Gráficas</button>
     <button class="tab" data-t="productos" onclick="tab('productos')">Productos y fotos</button>
     <button class="tab" onclick="salir()">Salir</button>
   </div>
@@ -177,6 +205,15 @@
         <div id="posUltima" style="font-size:13px;color:var(--gris);margin-top:10px"></div>
       </div>
     </div>
+  </div>
+
+  <div id="vGraficas" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <h3 style="margin:0;flex:1">Analítica de pedidos</h3>
+      <small id="gHora" style="color:var(--gris)"></small>
+      <button class="btn sec peq" onclick="graficas()">Actualizar</button>
+    </div>
+    <div id="gContenido"><div class="vacio">Cargando…</div></div>
   </div>
 
   <div id="vResumen" style="display:none">
@@ -372,7 +409,7 @@
     guardarPin('');
     detenerResumen();
     PIN = ''; $('pin').value = ''; $('hdr').style.display = 'none';
-    ['vCobrar','vResumen','vProductos','vVenta'].forEach(id => $(id).style.display = 'none');
+    ['vCobrar','vResumen','vProductos','vVenta','vGraficas'].forEach(id => $(id).style.display = 'none');
     $('vLogin').style.display = 'block'; $('pin').focus();
   }
 
@@ -382,11 +419,13 @@
     document.querySelectorAll('.tab[data-t]').forEach(b => b.classList.toggle('act', b.dataset.t === t));
     $('vCobrar').style.display = t === 'cobrar' ? 'block' : 'none';
     $('vResumen').style.display = t === 'resumen' ? 'block' : 'none';
+    $('vGraficas').style.display = t === 'graficas' ? 'block' : 'none';
     $('vProductos').style.display = t === 'productos' ? 'block' : 'none';
     $('vVenta').style.display = t === 'venta' ? 'block' : 'none';
     if (t === 'venta') cargarVenta();
     if (t === 'cobrar') { buscar(); setTimeout(() => $('q').focus(), 50); }
     if (t === 'resumen') resumen();
+    if (t === 'graficas') graficas();
     if (t === 'productos') productos();
   }
 
@@ -746,6 +785,116 @@
     } finally {
       if (version === versionResumen) timerResumen = setTimeout(() => resumen(true), 60000);
     }
+  }
+
+  /* ---------- GRÁFICAS (analítica para el contador) ---------- */
+  const DIAS_SEM = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const horaTxt = h => (h % 12 || 12) + (h < 12 ? ' a.m.' : ' p.m.');
+
+  // Columnas verticales. La columna más alta va resaltada y con su número.
+  function columnas(datos, unidad){
+    const max = Math.max(1, ...datos.map(d => d.v));
+    const top = Math.max(...datos.map(d => d.v));
+    return '<div class="gcols">' + datos.map(d =>
+      '<div class="gcol' + (d.v === top && top > 0 ? ' top' : '') + '" title="' + esc(d.tip + ': ' + d.v + ' ' + unidad) + '" onclick="this.classList.toggle(\'toc\')">' +
+      '<span class="v">' + d.v + '</span><div class="b" style="height:' + (d.v / max * 100) + '%"></div></div>').join('') + '</div>' +
+      '<div class="gejes">' + datos.map(d => '<div>' + esc(d.eje) + '</div>').join('') + '</div>';
+  }
+  // Barras horizontales (para nombres largos).
+  function barras(datos, fmt){
+    const max = Math.max(1, ...datos.map(d => d.v));
+    return '<div class="ghor">' + datos.map(d =>
+      '<div class="f" title="' + esc(d.n + ': ' + fmt(d.v)) + '"><span class="n">' + esc(d.n) + '</span>' +
+      '<span class="t"><i style="width:' + (d.v / max * 100) + '%"></i></span><span class="c">' + fmt(d.v) + '</span></div>').join('') + '</div>';
+  }
+  function tablaDatos(cab, filas){
+    return '<details class="gtab"><summary>Ver tabla</summary><table><tr>' + cab.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr>' +
+      filas.map(f => '<tr>' + f.map((c, i) => '<td' + (i ? ' class="n"' : '') + '>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table></details>';
+  }
+
+  async function graficas(){
+    $('gContenido').innerHTML = '<div class="vacio">Cargando…</div>';
+    try {
+      const [todos, r] = await Promise.all([run('cajaBuscar', PIN, '', ''), run('cajaResumen', PIN)]);
+      if (tActual !== 'graficas') return;
+      const peds = todos.filter(p => String(p.folio).indexOf('K-') === 0); // solo pedidos de padres
+      const conFecha = peds.map(p => ({ p, d: leerFecha(p.fecha) })).filter(x => x.d);
+      const totalHoja = Object.keys(r.porEstado).reduce((s, k) => s + (r.porEstado[k].pedidos || 0), 0);
+      let html = '';
+      if (totalHoja > peds.length) html += '<div class="gaviso">Se analizaron ' + peds.length + ' de ' + totalHoja + ' pedidos (el sistema solo regresó esos). Las gráficas de horario y día pueden estar incompletas.</div>';
+      if (conFecha.length < peds.length) html += '<div class="gaviso">' + (peds.length - conFecha.length) + ' pedidos no tienen una fecha que se pueda leer y no aparecen en las gráficas de horario y día.</div>';
+
+      // Indicadores
+      const vivos = peds.filter(p => p.estado !== 'Cancelado');
+      const promedio = vivos.length ? vivos.reduce((s, p) => s + Number(p.total || 0), 0) / vivos.length : 0;
+      const kpi = (t, v, sub) => '<div class="tile" style="cursor:default"><small>' + t + '</small><b>' + v + '</b>' + (sub ? '<div class="din2">' + sub + '</div>' : '') + '</div>';
+      html += '<div class="tiles">' +
+        kpi('🧾 Pedidos de padres', peds.length, vivos.length + ' sin contar cancelados') +
+        kpi('💰 Total cobrado', dinero(r.ingresos.cobrado), r.ingresos.movimientos + ' movimientos') +
+        kpi('⏳ Por cobrar', dinero(r.ingresos.porCobrar), (r.porEstado['Pendiente de pago'] || {pedidos: 0}).pedidos + ' pedidos sin pagar') +
+        kpi('🎟️ Pedido promedio', dinero(promedio), 'sin cancelados') + '</div>';
+
+      // ⭐ Horario
+      const porHora = new Array(24).fill(0);
+      conFecha.forEach(x => porHora[x.d.getHours()]++);
+      const usadas = porHora.map((v, h) => v ? h : -1).filter(h => h >= 0);
+      if (usadas.length){
+        const h0 = Math.min(...usadas), h1 = Math.max(...usadas);
+        const datosH = [];
+        for (let h = h0; h <= h1; h++) datosH.push({ v: porHora[h], eje: (h % 12 || 12) + (h < 12 ? 'a' : 'p'), tip: horaTxt(h) + ' – ' + horaTxt((h + 1) % 24) });
+        const hp = porHora.indexOf(Math.max(...porHora));
+        const manana = porHora.slice(0, 12).reduce((a, b) => a + b, 0), tarde = porHora.slice(12, 19).reduce((a, b) => a + b, 0), noche = porHora.slice(19).reduce((a, b) => a + b, 0);
+        const mejores = porHora.map((v, h) => ({ v, h })).filter(x => x.v).sort((a, b) => b.v - a.v).slice(0, 3);
+        const totalH = porHora.reduce((a, b) => a + b, 0);
+        html += '<div class="gsec dest" style="background:#fffaf6"><h3>📣 Mejores horarios para mandar mensajes a los padres</h3>' +
+          '<div class="gsub">Las horas en que más padres estuvieron conectados haciendo su pedido. Manda tus avisos un poco antes (10 a 15 minutos) de estas horas.</div>' +
+          '<div class="tiles" style="margin-bottom:0">' + mejores.map((x, i) =>
+            '<div class="tile" style="cursor:default;border-color:' + (i ? 'var(--linea)' : 'var(--acento)') + '"><small>' + ['🥇 Mejor horario', '🥈 Segundo', '🥉 Tercero'][i] + '</small>' +
+            '<b style="font-size:22px">' + horaTxt(x.h) + ' – ' + horaTxt((x.h + 1) % 24) + '</b><div class="din2">' + x.v + ' pedidos · ' + Math.round(x.v / totalH * 100) + '% del total</div></div>').join('') +
+          '</div></div>';
+        html += '<div class="gsec dest"><h3>⭐ ¿A qué hora hicieron sus pedidos los padres?</h3>' +
+          '<div class="gsub">Número de pedidos por hora del día (todos los días juntos). Toca o pasa el mouse sobre una barra para ver el detalle.</div>' +
+          '<span class="pico">Hora con más pedidos: ' + horaTxt(hp) + ' – ' + horaTxt((hp + 1) % 24) + ' (' + porHora[hp] + ' pedidos)</span> ' +
+          '<span class="pico" style="background:#eef2f7;color:#374151">Mañana ' + manana + ' · Tarde ' + tarde + ' · Noche ' + noche + '</span>' +
+          columnas(datosH, 'pedidos') +
+          tablaDatos(['Hora', 'Pedidos'], datosH.map(d => [d.tip, d.v])) + '</div>';
+      }
+
+      // ⭐ Días
+      const porDia = {};
+      conFecha.forEach(x => {
+        const k = x.d.getFullYear() + '-' + String(x.d.getMonth() + 1).padStart(2, '0') + '-' + String(x.d.getDate()).padStart(2, '0');
+        if (!porDia[k]) porDia[k] = { d: x.d, v: 0, dinero: 0 };
+        porDia[k].v++; if (x.p.estado !== 'Cancelado') porDia[k].dinero += Number(x.p.total || 0);
+      });
+      const dias = Object.keys(porDia).sort().map(k => porDia[k]);
+      if (dias.length){
+        const datosD = dias.map(x => ({ v: x.v, eje: DIAS_SEM[x.d.getDay()].slice(0, 3) + ' ' + x.d.getDate(), tip: DIAS_SEM[x.d.getDay()] + ' ' + x.d.getDate() + ' ' + MESES[x.d.getMonth()], dinero: x.dinero }));
+        const dp = datosD.reduce((a, b) => b.v > a.v ? b : a);
+        html += '<div class="gsec dest"><h3>⭐ ¿Qué días hicieron sus pedidos?</h3>' +
+          '<div class="gsub">Número de pedidos por día.</div>' +
+          '<span class="pico">Día con más pedidos: ' + dp.tip + ' (' + dp.v + ' pedidos)</span>' +
+          columnas(datosD, 'pedidos') +
+          tablaDatos(['Día', 'Pedidos', 'Importe (sin cancelados)'], datosD.map(d => [d.tip, d.v, dinero(d.dinero)])) + '</div>';
+      }
+
+      // Estado y productos
+      const est = Object.keys(r.porEstado).map(k => ({ n: k, v: r.porEstado[k].pedidos }));
+      const prods = r.porProducto.slice().sort((a, b) => b.piezas - a.piezas).slice(0, 12);
+      html += '<div class="gdos">' +
+        '<div class="gsec"><h3>Pedidos por estado</h3><div class="gsub">Cuántos pedidos hay en cada etapa.</div>' + barras(est, v => String(v)) + '</div>' +
+        '<div class="gsec"><h3>Productos más pedidos</h3><div class="gsub">Piezas pedidas (sin cancelados).</div>' + barras(prods.map(p => ({ n: p.nombre, v: p.piezas })), v => String(v)) + '</div>' +
+        '</div>';
+
+      // Ingresos por día (cobros)
+      if (r.ingresos.porDia.length){
+        html += '<div class="gsec"><h3>Dinero cobrado por día</h3><div class="gsub">Según la hoja Cobros.</div>' +
+          barras(r.ingresos.porDia.map(d => ({ n: d.dia, v: d.dinero })), dinero) + '</div>';
+      }
+      $('gContenido').innerHTML = html || '<div class="vacio">Aún no hay pedidos.</div>';
+      $('gHora').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit'});
+    } catch(e){ $('gContenido').innerHTML = '<div class="vacio">' + esc(e.message) + '</div>'; }
   }
 
   /* ---------- PRODUCTOS Y FOTOS ---------- */
