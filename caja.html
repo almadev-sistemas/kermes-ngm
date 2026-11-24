@@ -134,6 +134,25 @@
   @media(max-width:800px){.gdos{grid-template-columns:1fr}}
   @media(max-width:600px){.gcols,.gejes{gap:2px}.gcol,.gejes div{min-width:0}.gejes div{font-size:9px}.gcol .b{width:85%}.gcol .v{font-size:10px}}
   .gsec.oculta .ghor .c{color:transparent;text-shadow:0 0 9px rgba(0,0,0,.45);user-select:none}
+  .gscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+  details.gtab .gscroll table{margin-top:0}
+  @media(max-width:600px){
+    main{padding:12px}
+    .gsec{padding:14px 14px}
+    .tiles{grid-template-columns:1fr 1fr;gap:8px}
+    .tile{padding:10px 12px}
+    .tile b{font-size:18px!important;line-height:1.25}
+    .tile .din2{font-size:11px}
+    .tile .din{white-space:normal;font-size:14px}
+    .tile b.din{font-size:16px!important}
+    /* Barras horizontales: nombre y número arriba, barra a todo lo ancho abajo */
+    .ghor{gap:10px}
+    .ghor .f{grid-template-columns:1fr auto;gap:3px 10px}
+    .ghor .f .n{white-space:normal}
+    .ghor .f .t{grid-column:1 / -1;grid-row:2;height:14px}
+    .ghor .f .c{grid-column:2;grid-row:1;min-width:0}
+    details.gtab th,details.gtab td{padding:8px 8px;font-size:13px}
+  }
   .gaviso{background:#fff4e0;color:#7c4a03;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
   details.gtab{margin-top:12px;font-size:13px} details.gtab summary{cursor:pointer;color:var(--azul2);font-weight:600}
   details.gtab table{margin-top:8px}
@@ -818,8 +837,8 @@
       '<span class="t"><i style="width:' + (d.v / max * 100) + '%"></i></span><span class="c">' + fmt(d.v) + '</span></div>').join('') + '</div>';
   }
   function tablaDatos(cab, filas){
-    return '<details class="gtab"><summary>Ver tabla</summary><table><tr>' + cab.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr>' +
-      filas.map(f => '<tr>' + f.map((c, i) => '<td' + (i ? ' class="n"' : '') + '>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table></details>';
+    return '<details class="gtab"><summary>Ver tabla</summary><div class="gscroll"><table><tr>' + cab.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr>' +
+      filas.map(f => '<tr>' + f.map((c, i) => '<td' + (i ? ' class="n"' : '') + '>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table></div></details>';
   }
 
   async function graficas(){
