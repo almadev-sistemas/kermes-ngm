@@ -96,7 +96,12 @@
   th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--linea);font-size:14px}
   th{background:#eef2f7;font-size:13px;color:#374151}
   td.n,th.n{text-align:right}
-  #tablaProd{overflow-x:auto}
+  #tablaProd,#tablaCaja,#tablaDia{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  @media(max-width:600px){
+    #vResumen th,#vResumen td{padding:8px 8px;font-size:13px}
+    #vResumen .tile b{font-size:20px}
+  }
   #tablaProd tfoot th,#tablaProd tfoot td{background:#eef2f7;font-weight:700;border-top:2px solid var(--linea)}
   .prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
   .prod{background:#fff;border:1px solid var(--linea);border-radius:14px;overflow:hidden}
