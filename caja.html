@@ -896,11 +896,25 @@
       const prods = r.porProducto.slice().sort((a, b) => b.piezas - a.piezas).slice(0, 12);
       html += '<div class="gdos">' +
         '<div class="gsec"><h3>Pedidos por estado</h3><div class="gsub">Cuántos pedidos hay en cada etapa.</div>' + barras(est, v => String(v)) + '</div>' +
-        '<div class="gsec"><h3>Productos más pedidos</h3><div class="gsub">Piezas pedidas (sin cancelados).</div>' + barras(prods.map(p => ({ n: p.nombre, v: p.piezas })), v => String(v)) +
+        '<div class="gsec"><h3>Productos más pedidos</h3><div class="gsub">Piezas pedidas, pagadas o no (sin cancelados).</div>' + barras(prods.map(p => ({ n: p.nombre, v: p.piezas })), v => String(v)) +
         tablaDatos(['Producto', 'Piezas', 'Órdenes', 'En mostrador'],
           r.porProducto.slice().sort((a, b) => b.piezas - a.piezas || a.nombre.localeCompare(b.nombre, 'es-MX'))
             .map(p => [p.nombre, p.piezas, p.ordenes, p.ventaDirecta || 0])).replace('Ver tabla', 'Ver todos los productos') + '</div>' +
         '</div>';
+
+      // Lo que realmente se pagó: pedidos pagados + ventas de mostrador, sin importar de dónde vino
+      const real = r.porProducto.map(p => ({ n: p.nombre, ped: p.ordenesPagadas || 0, mos: p.ventaDirecta || 0, din: p.dineroCobrado || 0 }))
+        .map(x => Object.assign(x, { v: x.ped + x.mos })).filter(x => x.v > 0)
+        .sort((a, b) => b.v - a.v || a.n.localeCompare(b.n, 'es-MX'));
+      if (real.length){
+        const tot = real.reduce((s, x) => s + x.v, 0);
+        html += '<div class="gsec dest"><h3>✅ Lo que realmente se pagó, por producto</h3>' +
+          '<div class="gsub">Órdenes ya cobradas: pedidos pagados de los padres + ventas en mostrador. No cuenta pendientes ni cancelados.</div>' +
+          '<span class="pico" style="background:#e6f4ee;color:var(--ok)">' + tot + ' órdenes pagadas en total</span>' +
+          barras(real, v => String(v)) +
+          tablaDatos(['Producto', 'Pedidos pagados', 'Mostrador', 'Total pagado', 'Cobrado'], real.map(x => [x.n, x.ped, x.mos, x.v, dinero(x.din)]))
+            .replace('Ver tabla', 'Ver tabla (con importe cobrado)') + '</div>';
+      }
 
       // Ingresos por día (cobros)
       if (r.ingresos.porDia.length){
