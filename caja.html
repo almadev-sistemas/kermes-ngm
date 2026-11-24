@@ -848,14 +848,21 @@
   async function graficas(){
     $('gContenido').innerHTML = '<div class="vacio">Cargando…</div>';
     try {
-      const [todos, r] = await Promise.all([run('cajaBuscar', PIN, '', ''), run('cajaResumen', PIN)]);
+      // cajaAnalitica regresa TODOS los pedidos de padres. Si el script aún no la tiene,
+      // usa la búsqueda normal (solo trae los 60 registros más recientes).
+      const [an, r] = await Promise.all([
+        run('cajaAnalitica', PIN).catch(() => null),
+        run('cajaResumen', PIN),
+      ]);
       if (tActual !== 'graficas') return;
-      const peds = todos.filter(p => String(p.folio).indexOf('K-') === 0); // solo pedidos de padres
+      const todos = an ? null : await run('cajaBuscar', PIN, '', '');
+      if (tActual !== 'graficas') return;
+      const peds = an ? an.pedidos : todos.filter(p => String(p.folio).indexOf('K-') === 0); // solo pedidos de padres
       const conFecha = peds.map(p => ({ p, d: leerFecha(p.fecha) })).filter(x => x.d);
       const totalHoja = Object.keys(r.porEstado).reduce((s, k) => s + (r.porEstado[k].pedidos || 0), 0);
       let html = '';
-      const ventas = todos.length - peds.length; // V-…: ventas directas en mostrador (no son pedidos de padres)
-      if (totalHoja > todos.length) html += '<div class="gaviso">Se analizaron ' + todos.length + ' de ' + totalHoja + ' registros (el sistema solo regresó esos). Las gráficas de horario y día pueden estar incompletas.</div>';
+      const ventas = an ? an.ventas : todos.length - peds.length; // V-…: ventas directas en mostrador (no son pedidos de padres)
+      if (!an && totalHoja > todos.length) html += '<div class="gaviso">Se analizaron ' + todos.length + ' de ' + totalHoja + ' registros (el sistema solo regresó esos). Falta actualizar el Apps Script para ver todos los pedidos.</div>';
       if (conFecha.length < peds.length) html += '<div class="gaviso">' + (peds.length - conFecha.length) + ' pedidos no tienen una fecha que se pueda leer y no aparecen en las gráficas de horario y día.</div>';
 
       // Indicadores
