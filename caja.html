@@ -137,14 +137,13 @@
   .gscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
   details.gtab .gscroll table{margin-top:0}
   @media(max-width:600px){
-    main{padding:12px}
     .gsec{padding:14px 14px}
-    .tiles{grid-template-columns:1fr 1fr;gap:8px}
-    .tile{padding:10px 12px}
-    .tile b{font-size:18px!important;line-height:1.25}
-    .tile .din2{font-size:11px}
-    .tile .din{white-space:normal;font-size:14px}
-    .tile b.din{font-size:16px!important}
+    /* Solo en Gráficas: tarjetas de dos en dos (Resumen se queda como estaba) */
+    #vGraficas .tiles{grid-template-columns:1fr 1fr;gap:8px}
+    #vGraficas .tile{padding:10px 12px}
+    #vGraficas .tile b{font-size:18px!important;line-height:1.25}
+    #vGraficas .tile .din2{font-size:11px}
+    #vGraficas .tile b.din{font-size:16px!important;white-space:normal}
     /* Barras horizontales: nombre y número arriba, barra a todo lo ancho abajo */
     .ghor{gap:10px}
     .ghor .f{grid-template-columns:1fr auto;gap:3px 10px}
